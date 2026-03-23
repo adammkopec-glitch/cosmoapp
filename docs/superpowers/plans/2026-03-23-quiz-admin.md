@@ -174,7 +174,7 @@ Create `apps/server/src/modules/quiz/quiz.service.ts`:
 
 ```typescript
 import prisma from '../../config/prisma';
-import { AppError } from '../../utils/AppError';
+import { AppError } from '../../middleware/error.middleware';
 import { BodyPart, QuizNodeType } from '@prisma/client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -487,7 +487,7 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { BodyPart } from '@prisma/client';
 import * as quizService from './quiz.service';
-import { AppError } from '../../utils/AppError';
+import { AppError } from '../../middleware/error.middleware';
 
 const bodyPartSchema = z.nativeEnum(BodyPart);
 
@@ -1790,18 +1790,19 @@ const handleQuizAccept = (result: ApiQuizResult) => {
   setRecommendation(result);
   setQuizOpen(false);
   if (result.mainService) {
-    // Find matching service in loaded list and select it directly
+    // Find matching service in loaded list and pre-select it
     const match = services.find((s: any) => s.id === result.mainService!.id);
     if (match) {
-      setState((prev) => ({ ...prev, service: match }));
-      setStep(1); // advance to employee selection
+      // Use selectService() — the existing helper that also clears stale date/time state
+      selectService(match);
+      setStep(1); // advance to Pracownik (employee) step — STEPS[1]
     }
   }
-  // If no mainService: stay on service step, show all services with banner
+  // If no mainService: stay on service step (step 0), all services shown, banner visible
 };
 ```
 
-Note: Check the actual variable name used for the step setter (`setStep` or similar) and state setter (`setState` or similar) in the existing file and use those exact names.
+Note: `selectService` and `setStep` are defined in the `StepService` component scope in `BookingWizard.tsx`. Verify their exact names before editing. `STEPS[1]` = `'Pracownik'` — advancing to step 1 after auto-selecting a service is correct.
 
 - [ ] **Step 11.4: Verify TypeScript compiles**
 
