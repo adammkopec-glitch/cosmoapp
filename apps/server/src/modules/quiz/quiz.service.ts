@@ -1,4 +1,4 @@
-import prisma from '../../config/prisma';
+import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/error.middleware';
 import { BodyPart, QuizNodeType } from '@prisma/client';
 
