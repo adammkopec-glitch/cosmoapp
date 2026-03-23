@@ -425,6 +425,8 @@ model QuizNode {
   targetEdges QuizEdge[]   @relation("EdgeTarget")
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+
+  @@index([quizId])
 }
 
 model QuizEdge {
@@ -437,6 +439,10 @@ model QuizEdge {
   targetNode   QuizNode @relation("EdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
   sourceHandle String
   createdAt    DateTime @default(now())
+
+  @@index([quizId])
+  @@index([sourceNodeId])
+  @@index([targetNodeId])
 }
 
 model QuizResult {
@@ -454,7 +460,7 @@ model QuizResultSuggestion {
   resultId  String
   result    QuizResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
   serviceId String
-  service   Service    @relation(fields: [serviceId], references: [id])
+  service   Service    @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   order     Int
   updatedAt DateTime   @updatedAt
 
