@@ -1,0 +1,462 @@
+// filepath: apps/server/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  EMPLOYEE
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum LoyaltyTier {
+  BRONZE   // 0-499 pts
+  SILVER   // 500-1499 pts
+  GOLD     // 1500+ pts
+}
+
+enum TransactionType {
+  EARN
+  REDEEM
+  MANUAL_ADJUST
+}
+
+enum DiscountType {
+  PERCENTAGE
+  AMOUNT
+  OTHER
+}
+
+enum CouponStatus {
+  ACTIVE
+  USED
+}
+
+enum RescheduleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String
+  name           String
+  phone          String?
+  role           Role      @default(USER)
+  avatarPath     String?
+  loyaltyPoints  Int       @default(0)
+  loyaltyTier    LoyaltyTier @default(BRONZE)
+  resetToken     String?
+  resetTokenExp  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  termsAcceptedAt  DateTime?
+  marketingConsent Boolean   @default(false)
+  photoConsent     Boolean   @default(false)
+
+  cardAllergies   String?
+  cardConditions  String?
+  cardPreferences String?
+  cardStaffNotes  String?
+
+  ambassadorCode      String?  @unique
+  referredById        String?
+  referredBy          User?    @relation("Referrals", fields: [referredById], references: [id])
+  referrals           User[]   @relation("Referrals")
+  referralCount       Int      @default(0)
+
+  appointments        Appointment[]
+  loyaltyTransactions LoyaltyTransaction[]
+  coupons             UserCoupon[]
+  sentMessages        ChatMessage[]  @relation("SentMessages")
+  receivedMessages    ChatMessage[]  @relation("ReceivedMessages")
+  chatRoom            ChatRoom?      @relation("UserChatRoom")
+  adminChatRooms      ChatRoom[]     @relation("AdminChatRooms")
+  blogPosts           BlogPost[]
+  employee            Employee?
+  lockedDiscountCodes DiscountCode[]      @relation("LockedDiscountCodes")
+  discountCodeUsages  DiscountCodeUsage[] @relation("DiscountCodeUsages")
+  pushSubscriptions   PushSubscription[]
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String
+  price           Decimal  @db.Decimal(10,2)
+  durationMinutes Int
+  category        String
+  imagePath       String?
+  isActive        Boolean  @default(true)
+  detailedContent String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments    Appointment[]
+  metamorphoses   Metamorphosis[]
+  loyaltyRewards  LoyaltyReward[] @relation("RewardServices")
+  employees       Employee[]      @relation("ServiceEmployees")
+  quizResults     QuizResult[]
+  quizSuggestions QuizResultSuggestion[]
+}
+
+model BlogPost {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  content         String   // TipTap JSON serialized
+  excerpt         String
+  coverImage      String?
+  isPublished     Boolean  @default(false)
+  views           Int      @default(0)
+  readingTime     Int?
+  metaTitle       String?
+  metaDescription String?
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  tags            Tag[]    @relation("PostTags")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Tag {
+  id    String     @id @default(cuid())
+  name  String     @unique
+  slug  String     @unique
+  posts BlogPost[] @relation("PostTags")
+}
+
+model Metamorphosis {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  beforeImage String
+  afterImage  String
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id])
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model LoyaltyReward {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  pointsCost  Int
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  requiredTier        LoyaltyTier?
+  isForAllServices    Boolean @default(true)
+  applicableServices  Service[] @relation("RewardServices")
+
+  discountType        DiscountType @default(AMOUNT)
+  discountValue       Decimal?     @db.Decimal(10,2)
+
+  redemptions LoyaltyTransaction[]
+  userCoupons UserCoupon[]
+}
+
+model LoyaltyTransaction {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  points      Int
+  type        TransactionType
+  description String
+  rewardId    String?
+  reward      LoyaltyReward?  @relation(fields: [rewardId], references: [id])
+  createdAt   DateTime        @default(now())
+}
+
+model UserCoupon {
+  id            String        @id @default(cuid())
+  code          String?       @unique
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  rewardId      String
+  reward        LoyaltyReward @relation(fields: [rewardId], references: [id])
+  status        CouponStatus  @default(ACTIVE)
+  activatedAt   DateTime      @default(now())
+  usedAt        DateTime?
+  appointmentId String?       @unique
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+}
+
+model Employee {
+  id          String   @id @default(cuid())
+  name        String
+  bio         String?
+  avatarPath  String?
+  specialties String[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  userId       String?  @unique
+  user         User?    @relation(fields: [userId], references: [id])
+
+  appointments   Appointment[]
+  workDays       EmployeeWorkDay[]
+  weeklySchedule EmployeeWeeklySchedule[]
+  services       Service[]               @relation("ServiceEmployees")
+}
+
+model EmployeeWorkDay {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime // stored as midnight UTC for that day
+  timeBlocks Json?    // [{ start: "09:00", end: "13:00" }]
+  isWorking  Boolean  @default(true)
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@unique([employeeId, date])
+}
+
+model EmployeeWeeklySchedule {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int      // 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+  isWorking  Boolean  @default(true)
+  timeBlocks Json     // [{ start: "09:00", end: "13:00" }]
+  updatedAt  DateTime @updatedAt
+
+  @@unique([employeeId, dayOfWeek])
+}
+
+model Appointment {
+  id                 String            @id @default(cuid())
+  userId             String
+  user               User              @relation(fields: [userId], references: [id])
+  serviceId          String
+  service            Service           @relation(fields: [serviceId], references: [id])
+  employeeId         String?
+  employee           Employee?         @relation(fields: [employeeId], references: [id])
+  date               DateTime
+  status             AppointmentStatus @default(PENDING)
+  notes              String?
+  allergies          String?
+  problemDescription String?
+  photoPath          String?
+  staffNote          String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  coupon             UserCoupon?
+  discountCodeUsage  DiscountCodeUsage?
+
+  rescheduleDate     DateTime?
+  rescheduleStatus   RescheduleStatus?
+}
+
+model DiscountCode {
+  id             String              @id @default(cuid())
+  code           String              @unique
+  discountType   DiscountType
+  discountValue  Decimal             @db.Decimal(10, 2)
+  isActive       Boolean             @default(true)
+  lockedToUserId String?
+  lockedToUser   User?               @relation("LockedDiscountCodes", fields: [lockedToUserId], references: [id])
+  usages         DiscountCodeUsage[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model DiscountCodeUsage {
+  id             String       @id @default(cuid())
+  discountCodeId String
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id])
+  userId         String
+  user           User         @relation("DiscountCodeUsages", fields: [userId], references: [id])
+  appointmentId  String?      @unique
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id])
+  usedAt         DateTime     @default(now())
+
+  @@unique([discountCodeId, userId])
+}
+
+model AmbassadorConfig {
+  id            String       @id @default(cuid())
+  discountType  DiscountType @default(PERCENTAGE)
+  discountValue Decimal      @db.Decimal(10, 2) @default(10)
+  updatedAt     DateTime     @updatedAt
+}
+
+model SalonTerms {
+  id        String   @id @default(cuid())
+  content   String
+  version   String   @default("1.0")
+  updatedAt DateTime @updatedAt
+}
+
+model HeroSlide {
+  id           String   @id @default(cuid())
+  imagePath    String
+  title        String?
+  heading      String?
+  subtitle     String?
+  textPosition String?  @default("middle-center")
+  fontStyle    String?  @default("heading")
+  buttons      Json?
+  order        Int      @default(0)
+  isMain       Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model AboutPage {
+  id                String   @id @default(cuid())
+  salonTagline      String   @default("")
+  salonDescription  String   @default("")
+  salonCoverImage   String?
+  ownerName         String   @default("Wiktoria Ćwik")
+  ownerTitle        String   @default("Właścicielka & Kosmetolożka")
+  ownerBio          String   @default("")
+  ownerPhoto        String?
+  featuresTitle     String   @default("Dlaczego warto wybrać Cosmo?")
+  features          Json     @default("[]")
+  appDescription    String   @default("")
+  updatedAt         DateTime @updatedAt
+}
+
+model ConsultationLead {
+  id             String    @id @default(cuid())
+  name           String
+  email          String
+  phone          String
+  consentContact Boolean   @default(false)
+  consentData    Boolean   @default(false)
+  contacted      Boolean   @default(false)
+  archived       Boolean   @default(false)
+  contactedAt    DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+}
+
+model ChatRoom {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation("UserChatRoom", fields: [userId], references: [id])
+  adminId       String?
+  admin         User?     @relation("AdminChatRooms", fields: [adminId], references: [id])
+  lastMessageAt DateTime  @default(now())
+  userUnread    Int       @default(0)
+  adminUnread   Int       @default(0)
+  messages      ChatMessage[]
+  createdAt     DateTime  @default(now())
+}
+
+model ChatMessage {
+  id             String    @id @default(cuid())
+  roomId         String
+  room           ChatRoom  @relation(fields: [roomId], references: [id])
+  senderId       String
+  sender         User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId     String
+  receiver       User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  content        String
+  attachmentUrl  String?
+  attachmentType String?   // "image" | "video"
+  readAt         DateTime? // null = unread; replaces isRead Boolean
+  createdAt      DateTime  @default(now())
+}
+
+enum BodyPart {
+  STOPY
+  TWARZ
+  DLONIE
+  DEKOLT
+}
+
+enum QuizNodeType {
+  START
+  QUESTION
+  RESULT
+}
+
+model Quiz {
+  id        String     @id @default(cuid())
+  title     String
+  bodyPart  BodyPart
+  isActive  Boolean    @default(true)
+  nodes     QuizNode[]
+  edges     QuizEdge[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model QuizNode {
+  id          String       @id @default(cuid())
+  quizId      String
+  quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type        QuizNodeType
+  positionX   Float
+  positionY   Float
+  data        Json
+  result      QuizResult?
+  sourceEdges QuizEdge[]   @relation("EdgeSource")
+  targetEdges QuizEdge[]   @relation("EdgeTarget")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model QuizEdge {
+  id           String   @id @default(cuid())
+  quizId       String
+  quiz         Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  sourceNodeId String
+  sourceNode   QuizNode @relation("EdgeSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNodeId String
+  targetNode   QuizNode @relation("EdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+  sourceHandle String
+  createdAt    DateTime @default(now())
+}
+
+model QuizResult {
+  id            String                 @id @default(cuid())
+  nodeId        String                 @unique
+  node          QuizNode               @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  mainServiceId String?
+  mainService   Service?               @relation(fields: [mainServiceId], references: [id])
+  suggestions   QuizResultSuggestion[]
+  updatedAt     DateTime               @updatedAt
+}
+
+model QuizResultSuggestion {
+  id        String     @id @default(cuid())
+  resultId  String
+  result    QuizResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service    @relation(fields: [serviceId], references: [id])
+  order     Int
+  updatedAt DateTime   @updatedAt
+
+  @@unique([resultId, order])
+}
