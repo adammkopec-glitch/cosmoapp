@@ -50,6 +50,17 @@ enum RescheduleStatus {
   REJECTED
 }
 
+enum TreatmentSeriesStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum TreatmentSeriesNotificationKind {
+  BEFORE_DUE
+  DUE
+  OVERDUE
+}
+
 model User {
   id             String    @id @default(cuid())
   email          String    @unique
@@ -91,6 +102,16 @@ model User {
   lockedDiscountCodes DiscountCode[]      @relation("LockedDiscountCodes")
   discountCodeUsages  DiscountCodeUsage[] @relation("DiscountCodeUsages")
   pushSubscriptions   PushSubscription[]
+  reviews             Review[]
+  achievements        UserAchievement[]
+  serviceReminders    ServiceReminder[]
+  treatmentSeries     TreatmentSeries[]
+  notifications       Notification[]
+  productRecommendations       ProductRecommendation[]
+  addedRecommendations         ProductRecommendation[] @relation("RecommendationAddedBy")
+  skinJournalEntries           SkinJournalEntry[]
+  journalEntriesAuthored       SkinJournalEntry[]  @relation("JournalEntryAuthor")
+  journalComments              SkinJournalComment[]
 }
 
 model PushSubscription {
@@ -112,10 +133,13 @@ model Service {
   durationMinutes Int
   category        String
   imagePath       String?
-  isActive        Boolean  @default(true)
-  detailedContent String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isActive                Boolean  @default(true)
+  detailedContent         String?
+  recommendedIntervalDays Int?
+  isMultiVisit            Boolean  @default(false)
+  seriesIntervalsDays     Int[]    @default([])
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   appointments    Appointment[]
   metamorphoses   Metamorphosis[]
@@ -123,6 +147,8 @@ model Service {
   employees       Employee[]      @relation("ServiceEmployees")
   quizResults     QuizResult[]
   quizSuggestions QuizResultSuggestion[]
+  reviews         Review[]
+  treatmentSeries TreatmentSeries[]
 }
 
 model BlogPost {
@@ -266,14 +292,22 @@ model Appointment {
   problemDescription String?
   photoPath          String?
   staffNote          String?
+  completedAt        DateTime?
+  treatmentSeriesId  String?
+  treatmentSeries    TreatmentSeries?    @relation(fields: [treatmentSeriesId], references: [id], onDelete: SetNull)
+  treatmentSeriesStep Int?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
   coupon             UserCoupon?
   discountCodeUsage  DiscountCodeUsage?
+  review             Review?
+  productRecommendations ProductRecommendation[]
 
   rescheduleDate     DateTime?
   rescheduleStatus   RescheduleStatus?
+
+  @@index([treatmentSeriesId])
 }
 
 model DiscountCode {
@@ -465,4 +499,174 @@ model QuizResultSuggestion {
   updatedAt DateTime   @updatedAt
 
   @@unique([resultId, order])
+}
+
+// ============ Trendsetter Pack ============
+
+model Review {
+  id            String      @id @default(cuid())
+  rating        Int         // 1-5
+  comment       String?
+  isVisible     Boolean     @default(true)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  serviceId     String
+  service       Service     @relation(fields: [serviceId], references: [id])
+  createdAt     DateTime    @default(now())
+
+  @@index([serviceId])
+  @@index([userId])
+}
+
+model Achievement {
+  id          String            @id @default(cuid())
+  key         String            @unique
+  name        String
+  description String
+  icon        String
+  pointsBonus Int               @default(0)
+  condition   Json              // { type: "VISIT_COUNT", value: 10 }
+  sortOrder   Int               @default(0)
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  earnedAt      DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model TreatmentSeries {
+  id                     String                           @id @default(cuid())
+  userId                 String
+  user                   User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId              String
+  service                Service                          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  intervalsDays          Int[]
+  totalVisits            Int
+  completedVisits        Int                              @default(0)
+  nextStep               Int?
+  nextDueDate            DateTime?
+  lastCompletedAt        DateTime?
+  status                 TreatmentSeriesStatus            @default(ACTIVE)
+  startedFromAppointmentId String?
+  completedAt            DateTime?
+  createdAt              DateTime                         @default(now())
+  updatedAt              DateTime                         @updatedAt
+
+  appointments           Appointment[]
+  notifications          TreatmentSeriesNotification[]
+
+  @@index([userId, status])
+  @@index([serviceId, status])
+}
+
+model TreatmentSeriesNotification {
+  id                String                          @id @default(cuid())
+  treatmentSeriesId String
+  treatmentSeries   TreatmentSeries                 @relation(fields: [treatmentSeriesId], references: [id], onDelete: Cascade)
+  kind              TreatmentSeriesNotificationKind
+  bucketKey         String
+  scheduledFor      DateTime
+  sentAt            DateTime                        @default(now())
+
+  @@unique([treatmentSeriesId, kind, bucketKey])
+  @@index([scheduledFor])
+}
+
+model ServiceReminder {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  serviceId String
+  sentAt    DateTime @default(now())
+
+  @@index([userId, serviceId])
+}
+
+enum NotificationType {
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_RESCHEDULED
+  LOYALTY_POINTS
+  LOYALTY_TIER_UP
+  SERIES_REMINDER
+  GENERIC
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(GENERIC)
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+model ProductRecommendation {
+  id            String   @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  brand         String?
+  description   String?
+  linkUrl       String?
+  addedById     String
+  addedBy       User        @relation("RecommendationAddedBy", fields: [addedById], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([appointmentId])
+}
+
+model SkinJournalEntry {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorId            String?
+  author              User?    @relation("JournalEntryAuthor", fields: [authorId], references: [id])
+  isAdminEntry        Boolean  @default(false)
+  date                DateTime @default(now())
+  mood                Int?
+  notes               String?
+  photoPath           String?
+  linkedAppointmentId String?
+  tags                String[] @default([])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  comments            SkinJournalComment[]
+
+  @@index([userId, date])
+}
+
+model SkinJournalComment {
+  id        String           @id @default(cuid())
+  entryId   String
+  entry     SkinJournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User             @relation(fields: [authorId], references: [id])
+  content   String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([entryId])
+  @@index([authorId])
 }
