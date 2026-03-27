@@ -37,6 +37,7 @@ export interface ServerToClientEvents {
   'chat:read_receipt': (data: { roomId: string; readAt: string }) => void;
   'chat:typing': (data: { roomId: string; isTyping: boolean }) => void;
   'notification:new': (data: { unreadCount?: number }) => void;
+  'journal:new-comment': (data: { entryId: string; authorName: string }) => void;
   'notification:achievement': (data: { type: string; achievement: { name: string; description: string; icon: string; pointsBonus: number } }) => void;
   'admin:unread_count': (count: number) => void;
   'staff:unread_count': (count: number) => void;

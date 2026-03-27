@@ -140,13 +140,14 @@ export const UserLayout = () => {
         },
       });
     };
-    socket.on('journal:new-comment' as any, onJournalComment);
-    socket.on('notification:new', () => {
+    const onNotificationNew = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
-    });
+    };
+    socket.on('journal:new-comment', onJournalComment);
+    socket.on('notification:new', onNotificationNew);
     return () => {
-      socket.off('journal:new-comment' as any, onJournalComment);
-      socket.off('notification:new');
+      socket.off('journal:new-comment', onJournalComment);
+      socket.off('notification:new', onNotificationNew);
     };
   }, [isConnected, socket, queryClient]);
 

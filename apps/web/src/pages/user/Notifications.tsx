@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, Calendar, Star, Clock, CheckCheck } from 'lucide-react';
 import { notificationsApi, type Notification } from '@/api/notifications.api';
-import { queryClient } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useSocket } from '@/hooks/useSocket';
 
@@ -103,7 +102,8 @@ export const UserNotifications = () => {
   const markReadMutation = useMutation({
     mutationFn: (id: string) => notificationsApi.markRead(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
     onError: () => {
       toast.error('Nie udało się oznaczyć powiadomienia jako przeczytane');
@@ -113,7 +113,8 @@ export const UserNotifications = () => {
   const markAllReadMutation = useMutation({
     mutationFn: () => notificationsApi.markAllRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
       toast.success('Wszystkie powiadomienia oznaczone jako przeczytane');
     },
     onError: () => {
@@ -129,10 +130,12 @@ export const UserNotifications = () => {
 
   useEffect(() => {
     if (!socket) return;
-    socket.on('notification:new', () => {
+    const onNotificationNew = () => {
       qc.invalidateQueries({ queryKey: ['notifications'] });
-    });
-    return () => { socket.off('notification:new'); };
+      qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+    };
+    socket.on('notification:new', onNotificationNew);
+    return () => { socket.off('notification:new', onNotificationNew); };
   }, [socket, qc]);
 
   const notifications = data?.notifications ?? [];
