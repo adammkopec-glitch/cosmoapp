@@ -187,7 +187,7 @@ export const createAppointmentByAdmin = async (data: {
     });
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const appointment = await tx.appointment.create({
       data: {
         userId: user.id,
@@ -219,6 +219,23 @@ export const createAppointmentByAdmin = async (data: {
       },
     });
   });
+
+  try {
+    const io = getIO();
+    const serviceName = result.service?.name ?? 'Usługa';
+    const dateStr = result.date.toISOString().slice(0, 10);
+    await createAndEmitNotification(io, {
+      userId: user.id,
+      type: 'APPOINTMENT_CONFIRMED',
+      title: 'Wizyta potwierdzona',
+      body: `Twoja wizyta: ${serviceName} — ${dateStr}`,
+      url: '/user/wizyty',
+    });
+  } catch (err) {
+    console.error('Notification delivery failed (createAppointmentByAdmin):', err);
+  }
+
+  return result;
 };
 
 export const deleteAppointment = async (id: string) => {
@@ -304,7 +321,7 @@ export const rejectReschedule = async (id: string) => {
     throw new AppError('Brak oczekujacego wniosku o zmiane terminu', 400);
   }
 
-  return prisma.appointment.update({
+  const updated = await prisma.appointment.update({
     where: { id },
     data: { rescheduleDate: null, rescheduleStatus: null },
     include: {
@@ -312,6 +329,21 @@ export const rejectReschedule = async (id: string) => {
       user: { select: { id: true, name: true, email: true, phone: true } },
     },
   });
+
+  try {
+    const io = getIO();
+    await createAndEmitNotification(io, {
+      userId: appointment.userId,
+      type: 'GENERIC',
+      title: 'Zmiana terminu odrzucona',
+      body: 'Twoja prośba o zmianę terminu wizyty została odrzucona. Wizyta odbywa się w pierwotnym terminie.',
+      url: '/user/wizyty',
+    });
+  } catch (err) {
+    console.error('Notification delivery failed (rejectReschedule):', err);
+  }
+
+  return updated;
 };
 
 export const updateStatus = async (
@@ -343,6 +375,8 @@ export const updateStatus = async (
       include: { service: true, user: true, employee: { select: { id: true, name: true } } },
     });
 
+    let tierChanged = false;
+
     if (status === 'COMPLETED' && existing.status !== 'COMPLETED' && appointment.service) {
       await advanceTreatmentSeriesAfterCompletion(tx, appointment.id);
 
@@ -362,6 +396,9 @@ export const updateStatus = async (
       });
 
       const newTier = getTierForVisits(completedVisits);
+      if (newTier !== existing.user.loyaltyTier) {
+        tierChanged = true;
+      }
 
       await tx.user.update({
         where: { id: appointment.user.id },
@@ -372,6 +409,7 @@ export const updateStatus = async (
     return {
       appointment,
       wasNewlyCompleted: status === 'COMPLETED' && existing.status !== 'COMPLETED',
+      tierChanged,
     };
   });
 
@@ -427,6 +465,15 @@ export const updateStatus = async (
         title: 'Wizyta odwołana',
         body: `Twoja wizyta na ${serviceName} została odwołana`,
         url: '/user/wizyty',
+      });
+    }
+    if (result.tierChanged) {
+      await createAndEmitNotification(io, {
+        userId: apt.user.id,
+        type: 'LOYALTY_TIER_UP',
+        title: 'Nowy poziom lojalności!',
+        body: 'Gratulacje! Osiągnąłeś nowy poziom w programie lojalnościowym.',
+        url: '/user/lojalnosc',
       });
     }
   } catch (err) {
