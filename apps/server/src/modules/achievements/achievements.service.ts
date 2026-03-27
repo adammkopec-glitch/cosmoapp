@@ -293,9 +293,10 @@ export const checkAndAward = async (userId: string): Promise<AwardedAchievement[
     return results;
   });
 
+  const io = getIO();
   for (const achievement of awarded) {
     try {
-      await createAndEmitNotification(getIO(), {
+      await createAndEmitNotification(io, {
         userId,
         type: 'ACHIEVEMENT_UNLOCKED',
         title: achievement.name,

@@ -4,6 +4,7 @@ import { processAndSaveImage } from '../../utils/imageProcessor';
 import { AppError } from '../../middleware/error.middleware';
 import { createAndEmitNotification } from '../notifications/notifications.service';
 import { sendPushToUser } from '../push/push.service';
+import { getIO } from '../../socket';
 
 export const getJournal = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -68,14 +69,14 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
 
     const entryUserId = (comment as any).entry?.userId;
     if (entryUserId && entryUserId !== req.user!.id) {
-      const { getIO } = await import('../../socket');
+      const io = getIO();
       const authorName = req.user!.name ?? 'Kosmetolog';
-      getIO().to(`user:${entryUserId}`).emit('journal:new-comment' as any, {
+      io.to(`user:${entryUserId}`).emit('journal:new-comment' as any, {
         entryId: req.params.id,
         authorName,
       });
       try {
-        await createAndEmitNotification(getIO(), {
+        await createAndEmitNotification(io, {
           userId: entryUserId,
           type: 'JOURNAL_COMMENT',
           title: 'Nowy komentarz w dzienniku',

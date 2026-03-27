@@ -112,7 +112,8 @@ export const createAppointment = async (userId: string, data: any) => {
   try {
     const io = getIO();
     const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
-    const clientName = (appointment as any).user?.name ?? 'Klient';
+    const client = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+    const clientName = client?.name ?? 'Klient';
     const serviceName = appointment.service?.name ?? 'Usługa';
     for (const admin of admins) {
       await createAndEmitNotification(io, {

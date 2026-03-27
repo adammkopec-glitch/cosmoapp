@@ -125,11 +125,11 @@ export const initializeSocket = (server: Server) => {
             await createAndEmitNotification(io, {
               userId: room.userId,
               type: 'CHAT_MESSAGE',
-              title: 'Nowa wiadomość od kosmetologa',
-              body: content.substring(0, 80),
+              title: 'Nowa wiadomość',
+              body: 'Otrzymałeś/aś nową wiadomość w chacie',
               url: '/user/chat',
             });
-            await sendPushToUser(room.userId, { title: 'Nowa wiadomość', body: 'Kosmetolog odpowiedział/a w chacie', url: '/user/chat' });
+            await sendPushToUser(room.userId, { title: 'Nowa wiadomość', body: 'Otrzymałeś/aś nową wiadomość w chacie', url: '/user/chat' });
           }
         } catch (err) {
           console.error('Notification delivery failed (chat:send):', err);

@@ -94,8 +94,7 @@ export const adjustPoints = async (data: AdjustPointsInput) => {
       data: { loyaltyPoints: newPoints }
     });
 
-    const newTier = user.loyaltyTier;
-    return { transaction, newPoints, newTier, userId: user.id };
+    return { transaction, newPoints, userId: user.id };
   });
 
   // Emit socket notification after transaction (outside to avoid rollback on socket error)
