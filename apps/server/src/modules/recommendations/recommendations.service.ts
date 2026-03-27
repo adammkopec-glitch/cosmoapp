@@ -7,22 +7,21 @@ import { sendPushToUser } from '../push/push.service';
 export const addRecommendation = async (
   appointmentId: string,
   addedById: string,
-  data: { name: string; brand?: string; description?: string; linkUrl?: string }
+  data: { productId?: string; name: string; comment?: string }
 ) => {
   const appointment = await prisma.appointment.findUnique({ where: { id: appointmentId } });
   if (!appointment) throw new AppError('Wizyta nie znaleziona', 404);
 
-  const recommendation = await prisma.productRecommendation.create({
+  const recommendation = await prisma.appointmentRecommendation.create({
     data: {
       appointmentId,
       userId: appointment.userId,
       addedById,
+      productId: data.productId ?? null,
       name: data.name,
-      brand: data.brand,
-      description: data.description,
-      linkUrl: data.linkUrl,
+      comment: data.comment,
     },
-    include: { addedBy: { select: { name: true } } },
+    include: { addedBy: { select: { name: true } }, product: true },
   });
 
   try {
@@ -46,8 +45,64 @@ export const addRecommendation = async (
   return recommendation;
 };
 
+export const deleteRecommendation = async (
+  recId: string,
+  requesterId: string,
+  requesterRole: string
+) => {
+  const rec = await prisma.appointmentRecommendation.findUnique({ where: { id: recId } });
+  if (!rec) throw new AppError('Rekomendacja nie znaleziona', 404);
+
+  const isOwner = rec.userId === requesterId;
+  const isStaff = requesterRole === 'ADMIN' || requesterRole === 'EMPLOYEE';
+
+  if (!isOwner && !isStaff) {
+    throw new AppError('Brak uprawnień', 403);
+  }
+
+  return prisma.appointmentRecommendation.delete({ where: { id: recId } });
+};
+
+export const markPickedUp = async (recId: string) => {
+  const rec = await prisma.appointmentRecommendation.findUnique({ where: { id: recId } });
+  if (!rec) throw new AppError('Rekomendacja nie znaleziona', 404);
+  if (rec.pickedUp) throw new AppError('Rekomendacja już odebrana', 400);
+
+  if (rec.productId) {
+    const product = await prisma.product.findUnique({ where: { id: rec.productId } });
+    const [updated] = await prisma.$transaction([
+      prisma.appointmentRecommendation.update({
+        where: { id: recId },
+        data: { pickedUp: true, pickedUpAt: new Date() },
+        include: { product: true, addedBy: { select: { name: true } } },
+      }),
+      ...(product && product.stock > 0
+        ? [prisma.product.update({ where: { id: rec.productId }, data: { stock: { decrement: 1 } } })]
+        : []),
+    ]);
+    return updated;
+  }
+
+  return prisma.appointmentRecommendation.update({
+    where: { id: recId },
+    data: { pickedUp: true, pickedUpAt: new Date() },
+    include: { product: true, addedBy: { select: { name: true } } },
+  });
+};
+
+export const getForAppointment = async (appointmentId: string) => {
+  return prisma.appointmentRecommendation.findMany({
+    where: { appointmentId },
+    orderBy: { createdAt: 'asc' },
+    include: {
+      product: true,
+      addedBy: { select: { name: true } },
+    },
+  });
+};
+
 export const getMyRecommendations = async (userId: string) => {
-  const recommendations = await prisma.productRecommendation.findMany({
+  const recommendations = await prisma.appointmentRecommendation.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -58,11 +113,11 @@ export const getMyRecommendations = async (userId: string) => {
           service: { select: { name: true } },
         },
       },
+      product: true,
       addedBy: { select: { name: true } },
     },
   });
 
-  // Group by appointment
   const grouped: Record<string, {
     appointmentId: string;
     appointmentDate: string;

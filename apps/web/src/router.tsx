@@ -48,10 +48,12 @@ import AdminQuizzes from './pages/admin/AdminQuizzes';
 import AdminQuizEditor from './pages/admin/AdminQuizEditor';
 import { AdminReviews } from './pages/admin/Reviews';
 import { AdminNotifications } from './pages/admin/AdminNotifications';
+import { AdminAssortment } from './pages/admin/AdminAssortment';
 
 import { EmployeeSchedule } from './pages/employee/Schedule';
 import { EmployeeAppointments } from './pages/employee/MyAppointments';
 import { EmployeeChat } from './pages/employee/Chat';
+import { EmployeeAssortment } from './pages/employee/EmployeeAssortment';
 import { UserChat } from './pages/user/Chat';
 import { UserTimeline } from './pages/user/Timeline';
 import { UserNotifications } from './pages/user/Notifications';
@@ -115,6 +117,7 @@ export const router = createBrowserRouter([
       { path: 'terminarz', element: <EmployeeSchedule /> },
       { path: 'wizyty', element: <EmployeeAppointments /> },
       { path: 'chat', element: <EmployeeChat /> },
+      { path: 'asortyment', element: <EmployeeAssortment /> },
     ],
   },
   {
@@ -143,6 +146,7 @@ export const router = createBrowserRouter([
       { path: 'quizy/:id/edytor', element: <AdminQuizEditor /> },
       { path: 'recenzje', element: <AdminReviews /> },
       { path: 'powiadomienia', element: <AdminNotifications /> },
+      { path: 'asortyment', element: <AdminAssortment /> },
     ],
   },
 ]);

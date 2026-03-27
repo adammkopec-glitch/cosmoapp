@@ -107,8 +107,8 @@ model User {
   serviceReminders    ServiceReminder[]
   treatmentSeries     TreatmentSeries[]
   notifications       Notification[]
-  productRecommendations       ProductRecommendation[]
-  addedRecommendations         ProductRecommendation[] @relation("RecommendationAddedBy")
+  appointmentRecommendations   AppointmentRecommendation[]
+  addedRecommendations         AppointmentRecommendation[] @relation("RecommendationAddedBy")
   skinJournalEntries           SkinJournalEntry[]
   journalEntriesAuthored       SkinJournalEntry[]  @relation("JournalEntryAuthor")
   journalComments              SkinJournalComment[]
@@ -302,7 +302,7 @@ model Appointment {
   coupon             UserCoupon?
   discountCodeUsage  DiscountCodeUsage?
   review             Review?
-  productRecommendations ProductRecommendation[]
+  recommendations    AppointmentRecommendation[]
 
   rescheduleDate     DateTime?
   rescheduleStatus   RescheduleStatus?
@@ -626,18 +626,39 @@ model Notification {
   @@index([userId, readAt])
 }
 
-model ProductRecommendation {
-  id            String   @id @default(cuid())
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  brand       String?
+  description String?
+  price       Float
+  stock       Int      @default(0)
+  imagePath   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  recommendations AppointmentRecommendation[]
+}
+
+model AppointmentRecommendation {
+  id            String      @id @default(cuid())
   appointmentId String
   appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   userId        String
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String
-  brand         String?
-  description   String?
-  linkUrl       String?
   addedById     String
   addedBy       User        @relation("RecommendationAddedBy", fields: [addedById], references: [id])
+
+  productId     String?
+  product       Product?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  name          String
+  comment       String?
+
+  pickedUp      Boolean  @default(false)
+  pickedUpAt    DateTime?
+
   createdAt     DateTime @default(now())
 
   @@index([userId])

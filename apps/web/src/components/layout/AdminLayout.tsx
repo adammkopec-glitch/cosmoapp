@@ -1,7 +1,7 @@
 // filepath: apps/web/src/components/layout/AdminLayout.tsx
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { ChevronDown, Bell } from 'lucide-react';
+import { ChevronDown, Bell, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from './Navbar';
 import { useSocket } from '@/hooks/useSocket';
@@ -241,6 +241,13 @@ export const AdminLayout = () => {
                 </div>
               )}
             </div>
+            <Link
+              to="/admin/asortyment"
+              className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium flex items-center gap-2"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span>Asortyment</span>
+            </Link>
             <Link to="/admin/regulamin" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Regulamin</Link>
             <Link to="/admin/quizy" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Quizy</Link>
             <Link to="/admin/recenzje" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Recenzje</Link>

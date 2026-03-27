@@ -24,6 +24,12 @@ import aboutRouter from './modules/about/about.router';
 import pushRouter from './modules/push/push.router';
 import consultationsRouter from './modules/consultations/consultations.router';
 import quizRouter from './modules/quiz/quiz.router';
+import reviewsRouter from './modules/reviews/reviews.router';
+import remindersRouter from './modules/reminders/reminders.router';
+import achievementsRouter from './modules/achievements/achievements.router';
+import notificationsRouter from './modules/notifications/notifications.router';
+import skinJournalRouter from './modules/skin-journal/skin-journal.router';
+import productsRouter from './modules/products/products.router';
 
 const app = express();
 
@@ -58,6 +64,12 @@ app.use('/api/about', aboutRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/consultations', consultationsRouter);
 app.use('/api/quizzes', quizRouter);
+app.use('/api/reviews', reviewsRouter);
+app.use('/api/reminders', remindersRouter);
+app.use('/api/achievements', achievementsRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/skin-journal', skinJournalRouter);
+app.use('/api/products', productsRouter);
 
 // 404 handler
 app.use((req: Request, res: Response, next: NextFunction) => {
