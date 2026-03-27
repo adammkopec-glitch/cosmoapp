@@ -38,5 +38,5 @@ export const notificationsApi = {
     await api.post('/notifications/read-all');
   },
   broadcast: async (data: { title: string; body: string; url?: string }) =>
-    api.post('/notifications/broadcast', data).then(r => r.data as { sent: number }),
+    api.post('/notifications/broadcast', data).then(r => r.data as { data: { sent: number } }),
 };

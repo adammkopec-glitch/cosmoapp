@@ -51,7 +51,7 @@ export const AdminLayout = () => {
   const { data: adminNotifUnread = 0 } = useQuery<number>({
     queryKey: ['admin', 'notifications', 'unread-count'],
     queryFn: notificationsApi.getUnreadCount,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && isAdmin,
     refetchInterval: 30_000,
   });
 

@@ -18,9 +18,6 @@ const CHIP_MAP: Record<string, { label: string; fallbackUrl: string }> = {
   RECOMMENDATION_ADDED:    { label: 'Produkty',     fallbackUrl: '/user/produkty' },
   SERIES_REMINDER:         { label: 'Seria',        fallbackUrl: '/user/wizyty' },
   BROADCAST:               { label: 'Promocja',     fallbackUrl: '/' },
-  NEW_APPOINTMENT:         { label: 'Wizyta',       fallbackUrl: '/admin/wizyty' },
-  NEW_CONSULTATION:        { label: 'Konsultacja',  fallbackUrl: '/admin/konsultacje' },
-  NEW_REVIEW:              { label: 'Recenzja',     fallbackUrl: '/admin/recenzje' },
   GENERIC:                 { label: 'Info',         fallbackUrl: '/' },
 };
 

@@ -79,15 +79,15 @@ export const AdminNotifications = () => {
 
   // Notifications list
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'notifications'],
-    queryFn: () => notificationsApi.getAll(1, 20),
+    queryKey: ['admin', 'notifications', { limit: 50 }],
+    queryFn: () => notificationsApi.getAll(1, 50), // TODO: add load-more pagination
   });
 
   const broadcastMutation = useMutation({
     mutationFn: (payload: { title: string; body: string; url?: string }) =>
       notificationsApi.broadcast(payload),
-    onSuccess: (res: any) => {
-      const sent = res?.data?.sent ?? res?.sent ?? 0;
+    onSuccess: (res: { data: { sent: number } }) => {
+      const sent = res.data.sent;
       toast.success(`Wysłano do ${sent} użytkowników`);
       setTitle('');
       setBody('');
