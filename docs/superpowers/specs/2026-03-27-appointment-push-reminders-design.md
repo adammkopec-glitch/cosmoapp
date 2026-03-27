@@ -78,6 +78,7 @@ The scheduler runs hourly. Windows are set to ±1h around the target to guarante
 const appointments = await prisma.appointment.findMany({
   where: {
     status: 'CONFIRMED',
+    rescheduleStatus: null,          // skip appointments with a pending reschedule request
     date: { gte: windowStart, lte: windowEnd },
     reminders: { none: { type: reminderType } },
   },
@@ -87,34 +88,58 @@ const appointments = await prisma.appointment.findMany({
 
 The `reminders: { none: { type } }` filter means only appointments that have **not** yet received this reminder type are returned — no separate existence check needed.
 
+`rescheduleStatus: null` excludes appointments where the client has an open reschedule request — sending a reminder for a slot they may not attend is confusing UX.
+
 ### Send and record
 
 For each appointment:
-1. Call `sendPushToUser(userId, payload)`
-2. Create `AppointmentReminder` record: `{ appointmentId, type }`
+1. Call `sendPushToUser(userId, payload)` — `sendPushToUser` silently handles the case where the user has no push subscriptions
+2. Create `AppointmentReminder` record: `{ appointmentId, type }` — always recorded after attempting send, regardless of whether the user had active subscriptions
 
-Both steps per appointment; errors on individual push delivery are caught and logged, they do not abort the loop.
+Errors on individual push delivery are caught and logged; they do not abort the loop.
+
+### Idempotency guard
+
+```ts
+let reminderSchedulerInitialized = false;
+
+export function initializeAppointmentReminderScheduler() {
+  if (reminderSchedulerInitialized) return;
+  reminderSchedulerInitialized = true;
+
+  processAppointmentReminders();
+  const interval = setInterval(processAppointmentReminders, 60 * 60 * 1000);
+  interval.unref?.();
+}
+```
+
+The boolean guard prevents double-registration if `initializeAppointmentReminderScheduler()` is called more than once (e.g., in tests).
 
 ### Edge cases
 
 | Scenario | Behaviour |
 |----------|-----------|
 | Appointment is `CANCELLED`, `PENDING`, or `COMPLETED` | Excluded by `status: 'CONFIRMED'` filter |
-| Appointment created/confirmed less than 2h before its time | Falls outside both windows; no reminder sent |
+| Appointment has `rescheduleStatus: 'PENDING'` | Excluded by `rescheduleStatus: null` filter — no reminder for a slot the client may not attend |
+| Appointment confirmed less than 2h before its time | Falls outside both windows; no reminder sent |
 | Push endpoint stale (410 Gone) | `sendPushToUser` already handles this (deletes stale subscription) |
+| User has no push subscriptions | `sendPushToUser` returns silently; reminder record is still created |
 | Scheduler run fails mid-loop | Already-sent reminders are recorded; re-run will skip them via unique constraint |
+| Appointment rescheduled *after* a reminder was already sent | No second reminder is sent for the new slot — `@@unique` prevents re-sending for the same `appointmentId`. Accepted limitation for MVP. |
 
 ---
 
 ## Push Notification Payload
+
+`sendPushToUser` accepts `{ title, body, url? }` — `url` is a top-level field, not nested under `data`.
 
 ### DAY_BEFORE
 
 ```ts
 {
   title: 'Twoja wizyta jest jutro 💅',
-  body: `${service.name} z ${employee.firstName} — jutro o ${format(date, 'HH:mm')}. Pamiętaj, żeby przyjść na czas!`,
-  data: { url: '/user/wizyty' }
+  body: `${service.name} z ${employee.name} — jutro o ${format(date, 'HH:mm')}. Pamiętaj, żeby przyjść na czas!`,
+  url: '/user/wizyty',
 }
 ```
 
@@ -123,12 +148,14 @@ Both steps per appointment; errors on individual push delivery are caught and lo
 ```ts
 {
   title: 'Za 2 godziny wizyta! ⏳',
-  body: `${service.name} o ${format(date, 'HH:mm')} u ${employee.firstName}. Czas się zbierać!`,
-  data: { url: '/user/wizyty' }
+  body: `${service.name} o ${format(date, 'HH:mm')} u ${employee.name}. Czas się zbierać!`,
+  url: '/user/wizyty',
 }
 ```
 
-`data.url` is used by the service worker's `notificationclick` handler to navigate the user to `/user/wizyty`.
+`url` is used by the service worker's `notificationclick` handler to navigate the user to `/user/wizyty`.
+
+`format(date, 'HH:mm')` uses `date-fns`, already a project dependency.
 
 ---
 
@@ -139,16 +166,6 @@ Both steps per appointment; errors on individual push delivery are caught and lo
 ```ts
 initializeTreatmentSeriesMaintenance();
 initializeAppointmentReminderScheduler(); // new
-```
-
-Pattern inside:
-
-```ts
-export function initializeAppointmentReminderScheduler() {
-  processAppointmentReminders();
-  const interval = setInterval(processAppointmentReminders, 60 * 60 * 1000);
-  interval.unref?.();
-}
 ```
 
 ---
