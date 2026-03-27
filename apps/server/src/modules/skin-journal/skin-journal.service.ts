@@ -82,7 +82,10 @@ export const addComment = async (entryId: string, authorId: string, content: str
   if (!entry) throw new AppError('Wpis nie znaleziony', 404);
   return prisma.skinJournalComment.create({
     data: { entryId, authorId, content },
-    include: { author: { select: { id: true, name: true } } },
+    include: {
+      author: { select: { id: true, name: true } },
+      entry: { select: { userId: true } },
+    },
   });
 };
 

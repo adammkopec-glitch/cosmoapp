@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import * as journalService from './skin-journal.service';
 import { processAndSaveImage } from '../../utils/imageProcessor';
 import { AppError } from '../../middleware/error.middleware';
+import { createAndEmitNotification } from '../notifications/notifications.service';
+import { sendPushToUser } from '../push/push.service';
 
 export const getJournal = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -63,6 +65,33 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
     const { content } = req.body;
     if (!content?.trim()) throw new AppError('Treść komentarza jest wymagana', 400);
     const comment = await journalService.addComment(req.params.id, req.user!.id, content.trim());
+
+    const entryUserId = (comment as any).entry?.userId;
+    if (entryUserId && entryUserId !== req.user!.id) {
+      const { getIO } = await import('../../socket');
+      const authorName = req.user!.name ?? 'Kosmetolog';
+      getIO().to(`user:${entryUserId}`).emit('journal:new-comment' as any, {
+        entryId: req.params.id,
+        authorName,
+      });
+      try {
+        await createAndEmitNotification(getIO(), {
+          userId: entryUserId,
+          type: 'JOURNAL_COMMENT',
+          title: 'Nowy komentarz w dzienniku',
+          body: `${authorName} dodał/a komentarz do wpisu`,
+          url: '/user/dziennik',
+        });
+        await sendPushToUser(entryUserId, {
+          title: 'Nowy komentarz w dzienniku',
+          body: `${authorName} skomentował/a Twój wpis w dzienniku`,
+          url: '/user/dziennik',
+        });
+      } catch (err) {
+        console.error('Notification delivery failed (journal comment):', err);
+      }
+    }
+
     res.status(201).json({ status: 'success', data: { comment } });
   } catch (error) {
     next(error);

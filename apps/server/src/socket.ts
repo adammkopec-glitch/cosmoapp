@@ -6,6 +6,8 @@ import { verifyToken } from './utils/jwt';
 import { ClientToServerEvents, ServerToClientEvents } from '@cosmo/shared';
 import { prisma } from './config/prisma';
 import { saveMessage, markMessagesAsRead, getStaffUnreadTotal } from './modules/chat/chat.service';
+import { createAndEmitNotification } from './modules/notifications/notifications.service';
+import { sendPushToUser, sendPushToAdmins } from './modules/push/push.service';
 
 let io: SocketIOServer<ClientToServerEvents, ServerToClientEvents>;
 
@@ -103,6 +105,34 @@ export const initializeSocket = (server: Server) => {
           const total = await getStaffUnreadTotal();
           io.to('admin:global').emit('admin:unread_count', total);
           io.to('employee:global').emit('staff:unread_count', total);
+        }
+
+        try {
+          if (user.role === 'USER') {
+            const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+            for (const admin of admins) {
+              await createAndEmitNotification(io, {
+                userId: admin.id,
+                type: 'CHAT_MESSAGE',
+                title: 'Nowa wiadomość',
+                body: `${dbUser.name ?? 'Klient'}: ${content.substring(0, 80)}`,
+                url: '/admin/chat',
+                emitToAdminGlobal: true,
+              });
+            }
+            await sendPushToAdmins({ title: 'Nowa wiadomość od klienta', body: `${dbUser.name ?? 'Klient'} napisał/a w chacie`, url: '/admin/chat' });
+          } else {
+            await createAndEmitNotification(io, {
+              userId: room.userId,
+              type: 'CHAT_MESSAGE',
+              title: 'Nowa wiadomość od kosmetologa',
+              body: content.substring(0, 80),
+              url: '/user/chat',
+            });
+            await sendPushToUser(room.userId, { title: 'Nowa wiadomość', body: 'Kosmetolog odpowiedział/a w chacie', url: '/user/chat' });
+          }
+        } catch (err) {
+          console.error('Notification delivery failed (chat:send):', err);
         }
       } catch (err) {
         console.error('chat:send error:', err);

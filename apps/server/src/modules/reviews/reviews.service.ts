@@ -3,6 +3,7 @@ import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/error.middleware';
 import { checkAndAward } from '../achievements/achievements.service';
 import { getIO } from '../../socket';
+import { createAndEmitNotification } from '../notifications/notifications.service';
 
 export const createReview = async (
   userId: string,
@@ -88,6 +89,23 @@ export const createReview = async (
     }
   } catch {
     // Achievement check is not critical
+  }
+
+  try {
+    const io = getIO();
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+    for (const admin of admins) {
+      await createAndEmitNotification(io, {
+        userId: admin.id,
+        type: 'NEW_REVIEW',
+        title: 'Nowa recenzja',
+        body: `${review.user?.name ?? 'Klient'} wystawił/a ocenę ${review.rating}/5`,
+        url: '/admin/recenzje',
+        emitToAdminGlobal: true,
+      });
+    }
+  } catch (err) {
+    console.error('Notification delivery failed (review):', err);
   }
 
   return review;

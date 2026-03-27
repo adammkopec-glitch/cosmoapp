@@ -8,6 +8,8 @@ import {
   advanceTreatmentSeriesAfterCompletion,
   attachAppointmentToSeries,
 } from '../treatment-series/treatment-series.service';
+import { createAndEmitNotification } from '../notifications/notifications.service';
+import { sendPushToUser } from '../push/push.service';
 
 const appointmentInclude = {
   service: true,
@@ -105,6 +107,25 @@ export const createAppointment = async (userId: string, data: any) => {
         });
       }
     }
+  }
+
+  try {
+    const io = getIO();
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+    const clientName = (appointment as any).user?.name ?? 'Klient';
+    const serviceName = appointment.service?.name ?? 'Usługa';
+    for (const admin of admins) {
+      await createAndEmitNotification(io, {
+        userId: admin.id,
+        type: 'NEW_APPOINTMENT',
+        title: 'Nowa rezerwacja',
+        body: `${clientName} — ${serviceName}`,
+        url: '/admin/wizyty',
+        emitToAdminGlobal: true,
+      });
+    }
+  } catch (err) {
+    console.error('Notification delivery failed (createAppointment):', err);
   }
 
   return appointment;
@@ -245,7 +266,7 @@ export const approveReschedule = async (id: string) => {
     throw new AppError('Brak oczekujacego wniosku o zmiane terminu', 400);
   }
 
-  return prisma.appointment.update({
+  const updated = await prisma.appointment.update({
     where: { id },
     data: { date: appointment.rescheduleDate!, rescheduleDate: null, rescheduleStatus: null },
     include: {
@@ -253,6 +274,26 @@ export const approveReschedule = async (id: string) => {
       user: { select: { id: true, name: true, email: true, phone: true } },
     },
   });
+
+  try {
+    const io = getIO();
+    await createAndEmitNotification(io, {
+      userId: updated.user.id,
+      type: 'APPOINTMENT_RESCHEDULED',
+      title: 'Wizyta przełożona',
+      body: `Twoja wizyta została zatwierdzona na nowy termin`,
+      url: '/user/wizyty',
+    });
+    await sendPushToUser(updated.user.id, {
+      title: 'Wizyta przełożona',
+      body: 'Twoja wizyta została zatwierdzona na nowy termin',
+      url: '/user/wizyty',
+    });
+  } catch (err) {
+    console.error('Notification delivery failed (approveReschedule):', err);
+  }
+
+  return updated;
 };
 
 export const rejectReschedule = async (id: string) => {
@@ -353,6 +394,42 @@ export const updateStatus = async (
     } catch {
       // Achievement refresh should not fail the main flow.
     }
+  }
+
+  try {
+    const io = getIO();
+    const apt = result.appointment;
+    const dateStr = apt.date.toISOString().slice(0, 10);
+    const serviceName = apt.service?.name ?? 'Usługa';
+    if (status === 'CONFIRMED') {
+      await createAndEmitNotification(io, {
+        userId: apt.user.id,
+        type: 'APPOINTMENT_CONFIRMED',
+        title: 'Wizyta potwierdzona',
+        body: `Twoja wizyta: ${serviceName} — ${dateStr}`,
+        url: '/user/wizyty',
+      });
+      await sendPushToUser(apt.user.id, {
+        title: 'Wizyta potwierdzona',
+        body: `Twoja wizyta na ${serviceName} została potwierdzona`,
+        url: '/user/wizyty',
+      });
+    } else if (status === 'CANCELLED') {
+      await createAndEmitNotification(io, {
+        userId: apt.user.id,
+        type: 'APPOINTMENT_CANCELLED',
+        title: 'Wizyta odwołana',
+        body: `Twoja wizyta: ${serviceName} — ${dateStr}`,
+        url: '/user/wizyty',
+      });
+      await sendPushToUser(apt.user.id, {
+        title: 'Wizyta odwołana',
+        body: `Twoja wizyta na ${serviceName} została odwołana`,
+        url: '/user/wizyty',
+      });
+    }
+  } catch (err) {
+    console.error('Notification delivery failed (updateStatus):', err);
   }
 
   return result.appointment;
