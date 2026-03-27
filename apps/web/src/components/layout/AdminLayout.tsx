@@ -1,7 +1,7 @@
 // filepath: apps/web/src/components/layout/AdminLayout.tsx
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from './Navbar';
 import { useSocket } from '@/hooks/useSocket';
@@ -9,12 +9,14 @@ import { useChatStore } from '@/store/chat.store';
 import { useNotificationStore } from '@/store/notification.store';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { toast } from 'sonner';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { consultationsApi } from '@/api/consultations.api';
+import { notificationsApi } from '@/api/notifications.api';
 
 export const AdminLayout = () => {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [pagesOpen, setPagesOpen] = useState(
     () =>
       location.pathname.startsWith('/admin/hero') ||
@@ -45,6 +47,13 @@ export const AdminLayout = () => {
     enabled: isAuthenticated && isAdmin,
   });
   const newLeadsCount = newLeads.length;
+
+  const { data: adminNotifUnread = 0 } = useQuery<number>({
+    queryKey: ['admin', 'notifications', 'unread-count'],
+    queryFn: notificationsApi.getUnreadCount,
+    enabled: isAuthenticated,
+    refetchInterval: 30_000,
+  });
 
   useEffect(() => {
     if (!isConnected || !socket) return;
@@ -87,18 +96,24 @@ export const AdminLayout = () => {
       });
     };
 
+    const onNotificationNew = () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'notifications', 'unread-count'] });
+    };
+
     socket.on('admin:unread_count', onAdminUnread);
     socket.on('appointment:created', onCreated);
     socket.on('appointment:updated', onUpdated);
     socket.on('appointment:deleted', onDeleted);
+    socket.on('notification:new', onNotificationNew);
 
     return () => {
       socket.off('admin:unread_count', onAdminUnread);
       socket.off('appointment:created', onCreated);
       socket.off('appointment:updated', onUpdated);
       socket.off('appointment:deleted', onDeleted);
+      socket.off('notification:new', onNotificationNew);
     };
-  }, [isConnected, socket, setStaffUnreadTotal, addNotification]);
+  }, [isConnected, socket, setStaffUnreadTotal, addNotification, queryClient]);
 
   const totalStaffBadge = unreadCount + newLeadsCount;
 
@@ -113,6 +128,18 @@ export const AdminLayout = () => {
           <div className="p-6 font-heading font-semibold text-lg border-b">Administracja</div>
           <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto">
             <Link to="/admin" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Dashboard</Link>
+            <Link
+              to="/admin/powiadomienia"
+              className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium flex items-center gap-2"
+            >
+              <Bell className="h-4 w-4" />
+              <span>Powiadomienia</span>
+              {adminNotifUnread > 0 && (
+                <span className="ml-auto bg-destructive text-white text-xs rounded-full px-1.5 min-w-[1.25rem] text-center animate-pulse">
+                  {adminNotifUnread > 9 ? '9+' : adminNotifUnread}
+                </span>
+              )}
+            </Link>
             <div>
               <button
                 onClick={() => setStaffOpen(o => !o)}
@@ -216,6 +243,7 @@ export const AdminLayout = () => {
             </div>
             <Link to="/admin/regulamin" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Regulamin</Link>
             <Link to="/admin/quizy" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Quizy</Link>
+            <Link to="/admin/recenzje" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Recenzje</Link>
             <Link to="/admin/chat" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium flex items-center justify-between">
               <span>Wiadomości (Chat)</span>
               {staffUnreadTotal > 0 && (

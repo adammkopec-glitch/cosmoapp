@@ -46,11 +46,18 @@ import { ServiceDetail } from './pages/public/ServiceDetail';
 import { AdminServiceDetail } from './pages/admin/AdminServiceDetail';
 import AdminQuizzes from './pages/admin/AdminQuizzes';
 import AdminQuizEditor from './pages/admin/AdminQuizEditor';
+import { AdminReviews } from './pages/admin/Reviews';
+import { AdminNotifications } from './pages/admin/AdminNotifications';
 
 import { EmployeeSchedule } from './pages/employee/Schedule';
 import { EmployeeAppointments } from './pages/employee/MyAppointments';
 import { EmployeeChat } from './pages/employee/Chat';
 import { UserChat } from './pages/user/Chat';
+import { UserTimeline } from './pages/user/Timeline';
+import { UserNotifications } from './pages/user/Notifications';
+import { UserReferrals } from './pages/user/Referrals';
+import { UserProducts } from './pages/user/Products';
+import { UserSkinJournal } from './pages/user/SkinJournal';
 
 export const router = createBrowserRouter([
   {
@@ -87,7 +94,12 @@ export const router = createBrowserRouter([
       { path: 'appointments', element: <Navigate to="/user/wizyty" replace /> },
       { path: 'lojalnosc', element: <UserLoyalty /> },
       { path: 'profil', element: <UserProfile /> },
+      { path: 'historia', element: <UserTimeline /> },
       { path: 'chat', element: <UserChat /> },
+      { path: 'powiadomienia', element: <UserNotifications /> },
+      { path: 'polecenia', element: <UserReferrals /> },
+      { path: 'produkty', element: <UserProducts /> },
+      { path: 'dziennik', element: <UserSkinJournal /> },
     ],
   },
   {
@@ -129,6 +141,8 @@ export const router = createBrowserRouter([
       { path: 'konsultacje', element: <AdminConsultations /> },
       { path: 'quizy', element: <AdminQuizzes /> },
       { path: 'quizy/:id/edytor', element: <AdminQuizEditor /> },
+      { path: 'recenzje', element: <AdminReviews /> },
+      { path: 'powiadomienia', element: <AdminNotifications /> },
     ],
   },
 ]);
