@@ -601,6 +601,14 @@ enum NotificationType {
   LOYALTY_TIER_UP
   SERIES_REMINDER
   GENERIC
+  CHAT_MESSAGE
+  ACHIEVEMENT_UNLOCKED
+  JOURNAL_COMMENT
+  RECOMMENDATION_ADDED
+  NEW_APPOINTMENT
+  NEW_CONSULTATION
+  NEW_REVIEW
+  BROADCAST
 }
 
 model Notification {
@@ -610,6 +618,7 @@ model Notification {
   type      NotificationType @default(GENERIC)
   title     String
   body      String
+  url       String?
   readAt    DateTime?
   createdAt DateTime         @default(now())
 
