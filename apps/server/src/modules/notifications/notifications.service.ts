@@ -1,6 +1,7 @@
 import { prisma } from '../../config/prisma';
 import { NotificationType } from '@prisma/client';
 import type { Server } from 'socket.io';
+import { AppError } from '../../middleware/error.middleware';
 
 export const getNotifications = async (userId: string, page = 1, limit = 20) => {
   const skip = (page - 1) * limit;
@@ -31,7 +32,7 @@ export const markRead = async (userId: string, notificationId: string) => {
   });
 
   if (!notification) {
-    return null;
+    throw new AppError('Powiadomienie nie zostało znalezione', 404);
   }
 
   return await prisma.notification.update({
@@ -57,6 +58,10 @@ export const createNotification = async (data: {
   return await prisma.notification.create({ data });
 };
 
+export const getUnreadCount = async (userId: string) => {
+  return await prisma.notification.count({ where: { userId, readAt: null } });
+};
+
 export async function createAndEmitNotification(
   io: Server,
   data: {
@@ -76,7 +81,3 @@ export async function createAndEmitNotification(
   }
   return notification;
 }
-
-export const getUnreadCount = async (userId: string) => {
-  return await prisma.notification.count({ where: { userId, readAt: null } });
-};

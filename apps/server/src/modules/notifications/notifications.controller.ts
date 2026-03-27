@@ -24,6 +24,7 @@ export const markNotificationRead = async (req: Request, res: Response, next: Ne
   }
 };
 
+
 export const markAllNotificationsRead = async (req: Request, res: Response, next: NextFunction) => {
   try {
     await notificationsService.markAllRead(req.user!.id);
