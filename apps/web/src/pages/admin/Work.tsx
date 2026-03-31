@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useSocket } from '@/hooks/useSocket';
 import { toast } from 'sonner';
 import { RecommendationPanel } from '@/components/assortment/RecommendationPanel';
+import { HomecareRoutinePanel } from '@/components/homecare/HomecareRoutinePanel';
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Oczekująca',
@@ -429,6 +430,11 @@ export const AdminWork = () => {
 
                   {/* Polecone produkty */}
                   <RecommendationPanel appointmentId={selected.id} />
+
+                  {/* Rutyna pielęgnacyjna */}
+                  {(selected.status === 'CONFIRMED' || selected.status === 'COMPLETED') && (
+                    <HomecareRoutinePanel key={selected.id} appointmentId={selected.id} />
+                  )}
 
                   {/* Zakończ wizytę */}
                   {selected.status !== 'COMPLETED' && selected.status !== 'CANCELLED' && (

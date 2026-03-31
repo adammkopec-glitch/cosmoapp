@@ -124,7 +124,13 @@ export const AdminNotifications = () => {
   });
 
   const handleClick = (n: Notification) => {
-    const target = n.url ?? CHIP_MAP[n.type]?.fallbackUrl ?? '/admin';
+    let target = n.url ?? CHIP_MAP[n.type]?.fallbackUrl ?? '/admin';
+    try {
+      const parsed = new URL(target);
+      target = parsed.pathname + parsed.search + parsed.hash;
+    } catch {
+      // already a relative path, use as-is
+    }
     if (!n.readAt) markReadMutation.mutate(n.id);
     navigate(target);
   };

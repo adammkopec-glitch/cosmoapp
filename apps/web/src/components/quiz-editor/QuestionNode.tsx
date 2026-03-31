@@ -7,7 +7,7 @@ export interface QuestionNodeData {
 }
 
 export default function QuestionNode({ data, selected }: NodeProps) {
-  const d = data as QuestionNodeData;
+  const d = data as unknown as QuestionNodeData;
   return (
     <div
       className="bg-white rounded-xl shadow-sm min-w-[180px] max-w-[220px]"

@@ -210,6 +210,22 @@ export const createAppointmentByAdmin = async (data: {
       serviceId: data.serviceId,
     });
 
+    if (appointment.service) {
+      const existingRoutine = await tx.homecareRoutine.findUnique({
+        where: { appointmentId: appointment.id },
+      });
+      if (!existingRoutine) {
+        await tx.homecareRoutine.create({
+          data: {
+            appointmentId: appointment.id,
+            first48h: appointment.service.routineFirst48h ?? '',
+            followingDays: appointment.service.routineFollowingDays ?? '',
+            products: appointment.service.routineProducts ?? '',
+          },
+        });
+      }
+    }
+
     return tx.appointment.findUniqueOrThrow({
       where: { id: appointment.id },
       include: {
@@ -262,8 +278,8 @@ export const requestReschedule = async (id: string, userId: string, newDate: str
     throw new AppError('Nieprawidlowa data - musi byc w przyszlosci', 400);
   }
 
-  const dateStr = date.toISOString().slice(0, 10);
-  const timeStr = `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   const slots = await getAvailability(dateStr, appointment.serviceId, appointment.employeeId ?? undefined);
   const slot = slots.find((entry) => entry.time === timeStr);
   if (!slot || !slot.available) {
@@ -376,6 +392,24 @@ export const updateStatus = async (
     });
 
     let tierChanged = false;
+    let routineAutoSent = false;
+
+    // When transitioning to CONFIRMED: create homecare routine draft from service template
+    if (status === 'CONFIRMED' && existing.status !== 'CONFIRMED' && appointment.service) {
+      const existingRoutine = await tx.homecareRoutine.findUnique({
+        where: { appointmentId: appointment.id },
+      });
+      if (!existingRoutine) {
+        await tx.homecareRoutine.create({
+          data: {
+            appointmentId: appointment.id,
+            first48h: appointment.service.routineFirst48h ?? '',
+            followingDays: appointment.service.routineFollowingDays ?? '',
+            products: appointment.service.routineProducts ?? '',
+          },
+        });
+      }
+    }
 
     if (status === 'COMPLETED' && existing.status !== 'COMPLETED' && appointment.service) {
       await advanceTreatmentSeriesAfterCompletion(tx, appointment.id);
@@ -404,12 +438,25 @@ export const updateStatus = async (
         where: { id: appointment.user.id },
         data: { loyaltyPoints: { increment: points }, loyaltyTier: newTier },
       });
+
+      // Find existing routine and mark as sent if not already sent
+      const existingRoutine = await tx.homecareRoutine.findUnique({
+        where: { appointmentId: appointment.id },
+      });
+      if (existingRoutine && !existingRoutine.sentAt) {
+        await tx.homecareRoutine.update({
+          where: { appointmentId: appointment.id },
+          data: { sentAt: new Date() },
+        });
+        routineAutoSent = true;
+      }
     }
 
     return {
       appointment,
       wasNewlyCompleted: status === 'COMPLETED' && existing.status !== 'COMPLETED',
       tierChanged,
+      routineAutoSent,
     };
   });
 
@@ -432,6 +479,28 @@ export const updateStatus = async (
       }
     } catch {
       // Achievement refresh should not fail the main flow.
+    }
+  }
+
+  if (result.routineAutoSent) {
+    try {
+      const io = getIO();
+      const apt = result.appointment;
+      const serviceName = apt.service?.name ?? 'Usługa';
+      await createAndEmitNotification(io, {
+        userId: apt.user.id,
+        type: 'GENERIC',
+        title: 'Twoja rutyna pielęgnacyjna jest gotowa 💆‍♀️',
+        body: `Sprawdź co robić po zabiegu: ${serviceName}`,
+        url: '/user/rutyna',
+      });
+      await sendPushToUser(apt.user.id, {
+        title: 'Twoja rutyna pielęgnacyjna jest gotowa 💆‍♀️',
+        body: `Sprawdź co robić po zabiegu: ${serviceName}`,
+        url: '/user/rutyna',
+      });
+    } catch (err) {
+      console.error('Notification delivery failed (routineAutoSent):', err);
     }
   }
 

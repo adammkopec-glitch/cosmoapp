@@ -20,7 +20,7 @@ export const EmployeeLayout = () => {
   }, [isConnected, socket, setStaffUnreadTotal]);
 
   if (isLoading) return <div className="p-8 text-center">Ładowanie...</div>;
-  if (!isAuthenticated) return <Navigate to="/auth/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/auth/login" state={{ from: location.pathname }} replace />;
   if (!isEmployee) return <Navigate to="/" replace />;
 
   return (

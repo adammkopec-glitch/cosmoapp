@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   format,
@@ -27,11 +27,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import type { ValidatedVoucher } from '@cosmo/shared';
 import { Button } from '@/components/ui/button';
+import { ServiceRating } from '@/components/reviews/ServiceRating';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface WizardState {
   service: any | null;
+  seriesId: string | null;
   employeeId: string | null;
   date: Date | null;
   time: string | null;
@@ -52,12 +54,27 @@ const STEPS = ['Usługa', 'Pracownik', 'Termin', 'Uwagi', 'Potwierdzenie'];
 function MiniCalendar({
   selected,
   onSelect,
+  serviceId,
+  employeeId,
 }: {
   selected: Date | null;
   onSelect: (d: Date) => void;
+  serviceId: string | null;
+  employeeId: string | null;
 }) {
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(new Date()));
   const today = startOfToday();
+
+  const year = viewMonth.getFullYear();
+  const month = viewMonth.getMonth() + 1;
+
+  const { data: monthAvailability = {} } = useQuery<
+    Record<string, 'off' | 'none' | 'partial' | 'available'>
+  >({
+    queryKey: ['month-availability', year, month, serviceId, employeeId],
+    queryFn: () => employeesApi.getMonthAvailability(year, month, serviceId!, employeeId),
+    enabled: !!serviceId,
+  });
 
   const days = eachDayOfInterval({ start: startOfMonth(viewMonth), end: endOfMonth(viewMonth) });
   const firstDayOffset = (getDay(days[0]) + 6) % 7;
@@ -99,10 +116,14 @@ function MiniCalendar({
           const isPast = isBefore(day, today);
           const isSelected = selected ? isSameDay(day, selected) : false;
           const isToday = isSameDay(day, today);
+          const dateKey = format(day, 'yyyy-MM-dd');
+          const dayStatus = isPast ? null : (monthAvailability[dateKey] ?? null);
+          const isGreen = dayStatus === 'available' || dayStatus === 'partial';
+          const isRed = dayStatus === 'none' || dayStatus === 'off';
           return (
             <button
               key={day.toISOString()}
-              disabled={isPast}
+              disabled={isPast || isRed}
               onClick={() => onSelect(day)}
               className="text-sm rounded-full w-8 h-8 mx-auto flex items-center justify-center transition-colors"
               style={
@@ -112,6 +133,10 @@ function MiniCalendar({
                   ? { border: '1.5px solid #B8913A', color: '#B8913A', fontWeight: 700 }
                   : isPast
                   ? { color: 'rgba(26,18,8,0.25)', cursor: 'not-allowed' }
+                  : isRed
+                  ? { background: 'rgba(239,68,68,0.08)', color: '#DC2626', cursor: 'not-allowed' }
+                  : isGreen
+                  ? { background: 'rgba(34,197,94,0.1)', color: '#15803d', cursor: 'pointer' }
                   : { color: '#1A1208', cursor: 'pointer' }
               }
             >
@@ -130,18 +155,28 @@ function StepService({
   selected,
   onSelect,
   onAdvanceStep,
+  preselectedServiceId,
 }: {
   selected: any | null;
   onSelect: (s: any) => void;
   onAdvanceStep: () => void;
+  preselectedServiceId?: string | null;
 }) {
-  const { data: services = [], isLoading } = useQuery({
+  const { data: services = [], isLoading } = useQuery<any[]>({
     queryKey: ['services'],
     queryFn: servicesApi.getAll,
   });
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [quizOpen, setQuizOpen] = useState(false);
   const [recommendation, setRecommendation] = useState<ApiQuizResult | null>(null);
+
+  useEffect(() => {
+    if (!preselectedServiceId || selected || services.length === 0) return;
+    const match = services.find((service: any) => service.id === preselectedServiceId);
+    if (!match) return;
+    onSelect(match);
+    onAdvanceStep();
+  }, [preselectedServiceId, selected, services, onSelect, onAdvanceStep]);
 
   const categories: string[] = Array.from(new Set(services.map((s: any) => s.category))).sort() as string[];
   const filtered = filterCategory ? services.filter((s: any) => s.category === filterCategory) : services;
@@ -261,13 +296,16 @@ function StepService({
                   {service.description}
                 </p>
                 <div className="flex items-center justify-between pt-1">
-                  <span
-                    className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(184,145,58,0.1)', color: '#B8913A' }}
-                  >
-                    <Clock size={11} />
-                    {service.durationMinutes} min
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(184,145,58,0.1)', color: '#B8913A' }}
+                    >
+                      <Clock size={11} />
+                      {service.durationMinutes} min
+                    </span>
+                    <ServiceRating avgRating={service.avgRating} reviewCount={service.reviewCount} />
+                  </div>
                   <span className="font-bold" style={{ color: '#1A1208' }}>
                     {Number(service.price).toFixed(2)} zł
                   </span>
@@ -292,7 +330,7 @@ function StepEmployee({
   onSelect: (id: string | null) => void;
   service: any;
 }) {
-  const { data: employees = [], isLoading } = useQuery({
+  const { data: employees = [], isLoading } = useQuery<any[]>({
     queryKey: ['employees'],
     queryFn: employeesApi.getAll,
   });
@@ -320,26 +358,11 @@ function StepEmployee({
 
   return (
     <div className="space-y-4">
-      {/* No preference card */}
-      <div
-        onClick={() => onSelect(null)}
-        className="p-4 flex items-center gap-4"
-        style={cardStyle(selected === null)}
-      >
-        <div
-          className="w-14 h-14 rounded-full flex items-center justify-center text-2xl shrink-0"
-          style={{ background: 'rgba(184,145,58,0.1)' }}
-        >
-          🌸
+      {filteredEmployees.length === 0 && !isLoading && (
+        <div className="text-center py-12 text-sm" style={{ color: 'rgba(26,18,8,0.45)' }}>
+          Brak dostępnych pracowników dla tej usługi.
         </div>
-        <div className="flex-1">
-          <p className="font-semibold" style={{ color: '#1A1208' }}>Bez preferencji</p>
-          <p className="text-sm" style={{ color: 'rgba(26,18,8,0.5)' }}>Zostanie przypisany dostępny pracownik</p>
-        </div>
-        {selected === null && <CheckCircle2 size={20} style={{ color: '#B8913A', flexShrink: 0 }} />}
-      </div>
-
-      {/* Employee cards */}
+      )}
       <div className="grid sm:grid-cols-2 gap-4">
         {filteredEmployees.map((emp: any) => {
           const isSelected = selected === emp.id;
@@ -421,7 +444,12 @@ function StepDate({
         className="rounded-xl p-5"
         style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)' }}
       >
-        <MiniCalendar selected={selectedDate} onSelect={onSelectDate} />
+        <MiniCalendar
+          selected={selectedDate}
+          onSelect={onSelectDate}
+          serviceId={service?.id ?? null}
+          employeeId={employeeId}
+        />
       </div>
 
       {/* Time slots */}
@@ -633,7 +661,7 @@ function StepConfirm({
   const [codeInput, setCodeInput] = useState('');
   const [validating, setValidating] = useState(false);
   const [showInput, setShowInput] = useState(false);
-  const { data: rewards = [] } = useQuery({
+  const { data: rewards = [] } = useQuery<any[]>({
     queryKey: ['loyalty', 'rewards'],
     queryFn: loyaltyApi.getRewards,
   });
@@ -762,9 +790,13 @@ function StepConfirm({
               <Input
                 placeholder="Wpisz kod kuponu lub kod rabatowy"
                 value={codeInput}
-                onChange={e => setCodeInput(e.target.value.toUpperCase())}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setCodeInput(e.target.value.toUpperCase())
+                }
                 className="uppercase flex-1"
-                onKeyDown={e => e.key === 'Enter' && handleValidateVoucher()}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) =>
+                  e.key === 'Enter' && handleValidateVoucher()
+                }
                 autoFocus
               />
               <Button variant="outline" onClick={handleValidateVoucher} disabled={validating || !codeInput.trim()}>
@@ -853,11 +885,15 @@ function StepConfirm({
 export const BookingWizard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const preselectedServiceId = searchParams.get('serviceId');
+  const preselectedSeriesId = searchParams.get('seriesId');
 
   const [step, setStep] = useState(1);
   const [state, setState] = useState<WizardState>({
     service: null,
+    seriesId: preselectedSeriesId,
     employeeId: null,
     date: null,
     time: null,
@@ -876,26 +912,32 @@ export const BookingWizard = () => {
   }, []);
 
   const selectService = (service: any) => {
-    setState((prev) => ({ ...prev, service, date: null, time: null }));
+    setState((prev) => ({
+      ...prev,
+      service,
+      seriesId: service?.id === preselectedServiceId ? preselectedSeriesId : null,
+      date: null,
+      time: null,
+    }));
   };
 
   const selectDate = (date: Date) => {
     setState((prev) => ({ ...prev, date, time: null }));
   };
 
-  const { mutateAsync: createAppointment, isPending } = useMutation({
+  const { mutateAsync: createAppointment, isPending } = useMutation<any, Error, any>({
     mutationFn: appointmentsApi.create,
   });
-  const { mutateAsync: activateReward } = useMutation({
+  const { mutateAsync: activateReward } = useMutation<any, Error, string>({
     mutationFn: (rewardId: string) => loyaltyApi.redeem(rewardId),
   });
-  const { mutateAsync: uploadPhoto } = useMutation({
+  const { mutateAsync: uploadPhoto } = useMutation<any, Error, { id: string; file: File }>({
     mutationFn: ({ id, file }: { id: string; file: File }) => appointmentsApi.uploadPhoto(id, file),
   });
 
   const canProceed = () => {
     if (step === 1) return !!state.service;
-    if (step === 2) return state.employeeId !== undefined;
+    if (step === 2) return !!state.employeeId;
     if (step === 3) return !!state.date && !!state.time;
     return true;
   };
@@ -916,6 +958,7 @@ export const BookingWizard = () => {
 
       const appointment = await createAppointment({
         serviceId: state.service.id,
+        treatmentSeriesId: state.seriesId || undefined,
         employeeId: state.employeeId,
         date: dateTime.toISOString(),
         notes: state.notes || undefined,
@@ -935,6 +978,8 @@ export const BookingWizard = () => {
       queryClient.invalidateQueries({ queryKey: ['loyalty', 'coupons'] });
       queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
       queryClient.invalidateQueries({ queryKey: ['discount-codes', 'welcome'] });
+      queryClient.invalidateQueries({ queryKey: ['reminders', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
       toast.success('Wizyta została zarezerwowana!');
       navigate('/user/wizyty');
     } catch {
@@ -1003,7 +1048,14 @@ export const BookingWizard = () => {
 
       {/* Step content */}
       <div className="min-h-[400px]">
-        {step === 1 && <StepService selected={state.service} onSelect={selectService} onAdvanceStep={() => setStep(2)} />}
+        {step === 1 && (
+          <StepService
+            selected={state.service}
+            onSelect={selectService}
+            onAdvanceStep={() => setStep(2)}
+            preselectedServiceId={preselectedServiceId}
+          />
+        )}
         {step === 2 && (
           <StepEmployee
             selected={state.employeeId}

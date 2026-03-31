@@ -82,8 +82,8 @@ export default function AdminQuizEditor() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [initialized, setInitialized] = useState(false);
 
@@ -123,7 +123,7 @@ export default function AdminQuizEditor() {
   });
 
   const onConnect = useCallback(
-    (connection: Connection) => setEdges((eds) => addEdge({ ...connection, style: { stroke: '#B8913A' } }, eds)),
+    (connection: Connection) => setEdges((eds) => addEdge({ ...connection, style: { stroke: '#B8913A' } } as Edge, eds)),
     [setEdges],
   );
 

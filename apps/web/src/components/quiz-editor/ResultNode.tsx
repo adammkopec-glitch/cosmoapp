@@ -13,7 +13,7 @@ export interface ResultNodeData {
 }
 
 export default function ResultNode({ data, selected }: NodeProps) {
-  const d = data as ResultNodeData;
+  const d = data as unknown as ResultNodeData;
   return (
     <div
       className="bg-white rounded-xl shadow-sm min-w-[160px] max-w-[200px]"

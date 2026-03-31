@@ -120,7 +120,13 @@ export const UserNotifications = () => {
   });
 
   const handleClick = (n: Notification) => {
-    const target = n.url ?? CHIP_MAP[n.type]?.fallbackUrl ?? '/';
+    let target = n.url ?? CHIP_MAP[n.type]?.fallbackUrl ?? '/';
+    try {
+      const parsed = new URL(target);
+      target = parsed.pathname + parsed.search + parsed.hash;
+    } catch {
+      // already a relative path, use as-is
+    }
     if (!n.readAt) markReadMutation.mutate(n.id);
     navigate(target);
   };
@@ -241,13 +247,13 @@ export const UserNotifications = () => {
                   </div>
 
                   {/* Chip */}
-                  <span style={{
-                    background: notification.readAt ? '#2a2a2a' : '#B8913A',
-                    color: notification.readAt ? '#888' : '#000',
-                    fontSize: '11px', fontWeight: 700,
-                    padding: '3px 10px', borderRadius: '20px',
-                    flexShrink: 0, whiteSpace: 'nowrap',
-                  }}>
+                  <span
+                    className="shrink-0 whitespace-nowrap self-start mt-1 text-xs font-bold rounded-full px-2.5 py-0.5"
+                    style={{
+                      background: notification.readAt ? 'rgba(0,0,0,0.06)' : '#B8913A',
+                      color: notification.readAt ? '#888' : '#000',
+                    }}
+                  >
                     {CHIP_MAP[notification.type]?.label ?? 'Info'}
                   </span>
                 </div>
