@@ -1,0 +1,1 @@
+-- Migration created manually for tracking

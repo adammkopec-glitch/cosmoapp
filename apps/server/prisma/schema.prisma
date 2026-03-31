@@ -97,7 +97,9 @@ model User {
   receivedMessages    ChatMessage[]  @relation("ReceivedMessages")
   chatRoom            ChatRoom?      @relation("UserChatRoom")
   adminChatRooms      ChatRoom[]     @relation("AdminChatRooms")
-  blogPosts           BlogPost[]
+  blogPosts            BlogPost[]
+  blogComments         BlogComment[]         @relation("BlogCommentAuthor")
+  blogCommentReactions BlogCommentReaction[] @relation("BlogCommentReactions")
   employee            Employee?
   lockedDiscountCodes DiscountCode[]      @relation("LockedDiscountCodes")
   discountCodeUsages  DiscountCodeUsage[] @relation("DiscountCodeUsages")
@@ -138,6 +140,9 @@ model Service {
   recommendedIntervalDays Int?
   isMultiVisit            Boolean  @default(false)
   seriesIntervalsDays     Int[]    @default([])
+  routineFirst48h      String?
+  routineFollowingDays String?
+  routineProducts      String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
@@ -166,6 +171,7 @@ model BlogPost {
   authorId        String
   author          User     @relation(fields: [authorId], references: [id])
   tags            Tag[]    @relation("PostTags")
+  comments        BlogComment[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -175,6 +181,41 @@ model Tag {
   name  String     @unique
   slug  String     @unique
   posts BlogPost[] @relation("PostTags")
+}
+
+model BlogComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("BlogCommentAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  parentId  String?
+  parent    BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies   BlogComment[] @relation("CommentReplies")
+  content   String
+  imagePath String?
+  isHidden  Boolean  @default(false)
+  isSpam    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reactions BlogCommentReaction[]
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model BlogCommentReaction {
+  id        String      @id @default(cuid())
+  commentId String
+  comment   BlogComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation("BlogCommentReactions", fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime    @default(now())
+
+  @@unique([commentId, userId])
+  @@index([commentId])
 }
 
 model Metamorphosis {
@@ -303,6 +344,7 @@ model Appointment {
   discountCodeUsage  DiscountCodeUsage?
   review             Review?
   recommendations    AppointmentRecommendation[]
+  homecareRoutine    HomecareRoutine?
 
   rescheduleDate     DateTime?
   rescheduleStatus   RescheduleStatus?
@@ -609,6 +651,7 @@ enum NotificationType {
   NEW_CONSULTATION
   NEW_REVIEW
   BROADCAST
+  BLOG_COMMENT_REPLY
 }
 
 model Notification {
@@ -699,4 +742,17 @@ model SkinJournalComment {
 
   @@index([entryId])
   @@index([authorId])
+}
+
+model HomecareRoutine {
+  id            String      @id @default(cuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  first48h      String
+  followingDays String
+  products      String
+  sentAt        DateTime?
+  viewedAt      DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
