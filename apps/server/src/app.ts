@@ -30,6 +30,8 @@ import achievementsRouter from './modules/achievements/achievements.router';
 import notificationsRouter from './modules/notifications/notifications.router';
 import skinJournalRouter from './modules/skin-journal/skin-journal.router';
 import productsRouter from './modules/products/products.router';
+import homecareRouter from './modules/homecare/homecare.router';
+import blogCommentsRouter from './modules/blog-comments/blog-comments.router';
 
 const app = express();
 
@@ -70,6 +72,8 @@ app.use('/api/achievements', achievementsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/skin-journal', skinJournalRouter);
 app.use('/api/products', productsRouter);
+app.use('/api/homecare', homecareRouter);
+app.use('/api/blog-comments', blogCommentsRouter);
 
 // 404 handler
 app.use((req: Request, res: Response, next: NextFunction) => {
