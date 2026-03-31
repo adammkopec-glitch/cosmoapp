@@ -48,6 +48,7 @@ import AdminQuizzes from './pages/admin/AdminQuizzes';
 import AdminQuizEditor from './pages/admin/AdminQuizEditor';
 import { AdminReviews } from './pages/admin/Reviews';
 import { AdminNotifications } from './pages/admin/AdminNotifications';
+import { AdminBlogComments } from './pages/admin/AdminBlogComments';
 import { AdminAssortment } from './pages/admin/AdminAssortment';
 
 import { EmployeeSchedule } from './pages/employee/Schedule';
@@ -60,6 +61,7 @@ import { UserNotifications } from './pages/user/Notifications';
 import { UserReferrals } from './pages/user/Referrals';
 import { UserProducts } from './pages/user/Products';
 import { UserSkinJournal } from './pages/user/SkinJournal';
+import { HomecareRoutinePage } from './pages/user/HomecareRoutine';
 
 export const router = createBrowserRouter([
   {
@@ -102,6 +104,7 @@ export const router = createBrowserRouter([
       { path: 'polecenia', element: <UserReferrals /> },
       { path: 'produkty', element: <UserProducts /> },
       { path: 'dziennik', element: <UserSkinJournal /> },
+      { path: 'rutyna', element: <HomecareRoutinePage /> },
     ],
   },
   {
@@ -131,6 +134,7 @@ export const router = createBrowserRouter([
       { path: 'uslugi/:slug', element: <AdminServiceDetail /> },
       { path: 'blog/new', element: <AdminBlogForm /> },
       { path: 'blog/:id/edit', element: <AdminBlogForm /> },
+      { path: 'blog/:id/comments', element: <AdminBlogComments /> },
       { path: 'blog', element: <AdminBlog /> },
       { path: 'metamorfozy', element: <AdminMetamorphoses /> },
       { path: 'lojalnosc', element: <AdminLoyalty /> },
