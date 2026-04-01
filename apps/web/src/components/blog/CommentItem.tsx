@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { Trash2, EyeOff, Eye, AlertTriangle } from 'lucide-react';
@@ -26,6 +26,8 @@ interface Props {
   currentUserId?: string;
   isAdmin: boolean;
   depth?: number;
+  isNew?: boolean;
+  newCommentId?: string;
   onDelete: (id: string) => void;
   onModerate: (id: string, data: { isHidden?: boolean; isSpam?: boolean }) => void;
   onReact: (id: string, emoji: string) => void;
@@ -38,16 +40,25 @@ export const CommentItem = ({
   currentUserId,
   isAdmin,
   depth = 0,
+  isNew = false,
+  newCommentId,
   onDelete,
   onModerate,
   onReact,
   onReply,
 }: Props) => {
   const [replying, setReplying] = useState(false);
+  const itemRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isNew && itemRef.current) {
+      itemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isNew]);
   const indentClass = depth > 0 ? 'ml-6 md:ml-10 pl-4 border-l border-border/30' : '';
 
   return (
-    <div className={indentClass}>
+    <div className={`${indentClass} ${isNew ? 'comment-new' : ''}`} ref={itemRef}>
       <div className="py-4">
         {comment.isHidden && !isAdmin ? (
           <p className="text-sm text-muted-foreground italic">
@@ -164,6 +175,8 @@ export const CommentItem = ({
             currentUserId={currentUserId}
             isAdmin={isAdmin}
             depth={depth + 1}
+            isNew={child.id === newCommentId}
+            newCommentId={newCommentId}
             onDelete={onDelete}
             onModerate={onModerate}
             onReact={onReact}

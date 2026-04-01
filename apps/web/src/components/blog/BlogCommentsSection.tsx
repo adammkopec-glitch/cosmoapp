@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { MessageSquare } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
@@ -14,6 +15,7 @@ interface Props {
 export const BlogCommentsSection = ({ slug }: Props) => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
+  const [newCommentId, setNewCommentId] = useState<string | undefined>();
 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['blog-comments', slug],
@@ -25,7 +27,11 @@ export const BlogCommentsSection = ({ slug }: Props) => {
   const addMutation = useMutation({
     mutationFn: (data: { content: string; parentId?: string; image?: File }) =>
       blogApi.addComment(slug, data),
-    onSuccess: invalidate,
+    onSuccess: (newComment) => {
+      setNewCommentId(newComment.id);
+      invalidate();
+      setTimeout(() => setNewCommentId(undefined), 2500);
+    },
     onError: () => toast.error('Nie udało się dodać komentarza'),
   });
 
@@ -50,6 +56,17 @@ export const BlogCommentsSection = ({ slug }: Props) => {
 
   return (
     <section className="py-14" style={{ backgroundColor: '#F5F0EB' }}>
+      <style>{`
+        @keyframes slideInFade {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .comment-new {
+          animation: slideInFade 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+          border-left: 3px solid #B8913A !important;
+          transition: border-left-color 0.5s ease;
+        }
+      `}</style>
       <div className="container max-w-3xl mx-auto">
         <h2
           className="text-2xl font-heading font-bold mb-8 flex items-center gap-2"
@@ -84,6 +101,7 @@ export const BlogCommentsSection = ({ slug }: Props) => {
             slug={slug}
             currentUserId={user?.id}
             isAdmin={isAdmin}
+            newCommentId={newCommentId}
             onDelete={(id) => deleteMutation.mutate(id)}
             onModerate={(id, data) => moderateMutation.mutate({ id, data })}
             onReact={(id, emoji) => reactMutation.mutate({ id, emoji })}

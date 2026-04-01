@@ -6,6 +6,7 @@ interface Props {
   slug: string;
   currentUserId?: string;
   isAdmin: boolean;
+  newCommentId?: string;
   onDelete: (id: string) => void;
   onModerate: (id: string, data: { isHidden?: boolean; isSpam?: boolean }) => void;
   onReact: (id: string, emoji: string) => void;
@@ -33,6 +34,7 @@ export const CommentTree = ({
   slug,
   currentUserId,
   isAdmin,
+  newCommentId,
   onDelete,
   onModerate,
   onReact,
@@ -57,6 +59,8 @@ export const CommentTree = ({
           slug={slug}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          isNew={comment.id === newCommentId}
+          newCommentId={newCommentId}
           onDelete={onDelete}
           onModerate={onModerate}
           onReact={onReact}
