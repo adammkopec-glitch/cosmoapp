@@ -176,8 +176,8 @@ export const BlogPost = () => {
         };
       });
     },
-    onError: (_err, _slug, context) => {
-      queryClient.setQueryData(['blog', slug], context?.previousPost);
+    onError: (_err, slugVar, context) => {
+      queryClient.setQueryData(['blog', slugVar], context?.previousPost);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['blog', slug] });

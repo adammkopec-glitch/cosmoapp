@@ -61,10 +61,15 @@ export const BlogCommentsSection = ({ slug }: Props) => {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes borderFade {
+          0%   { border-left-color: #B8913A; }
+          70%  { border-left-color: #B8913A; }
+          100% { border-left-color: transparent; }
+        }
         .comment-new {
-          animation: slideInFade 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-          border-left: 3px solid #B8913A !important;
-          transition: border-left-color 0.5s ease;
+          animation: slideInFade 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards,
+                     borderFade 2.5s ease forwards;
+          border-left: 3px solid transparent !important;
         }
       `}</style>
       <div className="container max-w-3xl mx-auto">
