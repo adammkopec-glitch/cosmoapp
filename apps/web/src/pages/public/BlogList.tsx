@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { blogApi } from '@/api/blog.api';
 import { useAuthStore } from '@/store/auth.store';
-import { format } from 'date-fns';
 import { Clock, Heart, MessageCircle } from 'lucide-react';
 import { PageSEO } from '@/components/shared/SEO';
 import { BlogListSkeleton } from '@/components/skeletons';
@@ -187,8 +186,8 @@ export const BlogList = () => {
         </div>
       </section>
       <section className="py-16" style={{ backgroundColor: '#FDFAF6' }}>
-        <div className="container">
-          <BlogListSkeleton count={6} />
+        <div className="container max-w-4xl mx-auto">
+          <BlogListSkeleton count={5} />
         </div>
       </section>
     </>
@@ -238,38 +237,76 @@ export const BlogList = () => {
         </div>
       </section>
 
-      {/* Grid */}
+      {/* List */}
       <section className="py-16" style={{ backgroundColor: '#FDFAF6' }}>
-        <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="container max-w-4xl mx-auto">
+          <div className="flex flex-col gap-4">
             {posts?.filter((p: any) => p.isPublished).map((post: any) => (
               <Link to={`/blog/${post.slug}`} key={post.id} className="block group">
                 <div
-                  className="overflow-hidden h-full flex flex-col transition-all duration-300 hover:-translate-y-1"
+                  className="flex flex-col sm:flex-row gap-0 overflow-hidden transition-all duration-300"
                   style={{
-                    borderRadius: '20px',
+                    borderRadius: '16px',
                     border: '1px solid rgba(0,0,0,0.07)',
                     backgroundColor: '#fff',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                   }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.10)')}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)')}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(0,0,0,0.09)')}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)')}
                 >
-                  {post.coverImage && (
-                    <div className="aspect-video w-full overflow-hidden" style={{ borderRadius: '20px 20px 0 0' }}>
+                  {/* Desktop thumbnail (left side) */}
+                  <div
+                    className="shrink-0 overflow-hidden hidden sm:block"
+                    style={{ width: '140px', borderRadius: '16px 0 0 16px' }}
+                  >
+                    {post.coverImage ? (
                       <img
                         src={post.coverImage}
                         alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        style={{ minHeight: '100px' }}
+                      />
+                    ) : (
+                      <div className="w-full h-full" style={{ background: 'rgba(184,145,58,0.08)', minHeight: '100px' }} />
+                    )}
+                  </div>
+
+                  {/* Mobile thumbnail (top) */}
+                  {post.coverImage && (
+                    <div className="sm:hidden w-full overflow-hidden" style={{ height: '160px', borderRadius: '16px 16px 0 0' }}>
+                      <img
+                        src={post.coverImage}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                   )}
-                  <div className="flex flex-col flex-1 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#B8913A' }}>
-                        {format(new Date(post.createdAt), 'dd MMMM yyyy')}
-                      </span>
-                      <div className="flex items-center gap-3 text-xs" style={{ color: 'rgba(26,18,8,0.45)' }}>
+
+                  {/* Content */}
+                  <div className="flex flex-col flex-1 px-5 py-4 min-w-0">
+                    <h2
+                      className="text-lg font-heading font-bold leading-snug mb-1 line-clamp-2"
+                      style={{ color: '#1A1208' }}
+                    >
+                      {post.title}
+                    </h2>
+                    <p
+                      className="text-sm leading-relaxed mb-3 line-clamp-2"
+                      style={{ color: 'rgba(26,18,8,0.55)' }}
+                    >
+                      {post.excerpt}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 mt-auto">
+                      {post.tags?.slice(0, 3).map((tag: any) => (
+                        <span
+                          key={tag.id}
+                          className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                          style={{ backgroundColor: 'rgba(184,145,58,0.1)', color: '#B8913A' }}
+                        >
+                          #{tag.name}
+                        </span>
+                      ))}
+                      <div className="flex items-center gap-3 ml-auto text-xs" style={{ color: 'rgba(26,18,8,0.45)' }}>
                         {post.readingTime && (
                           <span className="flex items-center gap-1">
                             <Clock size={12} /> {post.readingTime} min
@@ -278,40 +315,13 @@ export const BlogList = () => {
                         <span className="flex items-center gap-1">
                           <MessageCircle size={12} /> {post._count?.comments ?? 0}
                         </span>
+                        <LikeButton
+                          post={post}
+                          onLike={() => likeMutation.mutate(post.slug)}
+                          isLoggedIn={!!user}
+                          isPending={likeMutation.isPending}
+                        />
                       </div>
-                    </div>
-                    <h2
-                      className="text-xl font-heading font-bold mb-3 leading-snug transition-colors flex-1"
-                      style={{ color: '#1A1208' }}
-                    >
-                      {post.title}
-                    </h2>
-                    <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(26,18,8,0.55)' }}>
-                      {post.excerpt}
-                    </p>
-                    {post.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {post.tags.map((tag: any) => (
-                          <span
-                            key={tag.id}
-                            className="text-xs font-semibold px-3 py-1 rounded-full"
-                            style={{
-                              backgroundColor: 'rgba(184,145,58,0.1)',
-                              color: '#B8913A',
-                            }}
-                          >
-                            #{tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 mt-4 pt-3 border-t" style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-                      <LikeButton
-                        post={post}
-                        onLike={() => likeMutation.mutate(post.slug)}
-                        isLoggedIn={!!user}
-                        isPending={likeMutation.isPending}
-                      />
                     </div>
                   </div>
                 </div>
