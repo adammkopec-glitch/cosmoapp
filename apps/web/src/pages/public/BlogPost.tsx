@@ -1,5 +1,5 @@
 // filepath: apps/web/src/pages/public/BlogPost.tsx
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -33,26 +33,48 @@ const ContentRenderer = ({ content }: { content: string }) => {
   return <EditorContent editor={editor} />;
 };
 
-const LikeButton = ({ 
-  isLiked, 
-  count, 
-  onLike, 
-  isLoggedIn, 
-  isPending 
-}: { 
-  isLiked: boolean; 
+const LikeButton = ({
+  isLiked,
+  count,
+  onLike,
+  isLoggedIn,
+  isPending
+}: {
+  isLiked: boolean;
   count: number;
-  onLike: () => void; 
+  onLike: () => void;
   isLoggedIn: boolean;
   isPending: boolean;
 }) => {
   const [showHint, setShowHint] = useState(false);
   const [animate, setAnimate] = useState(false);
-  const [justLiked, setJustLiked] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const spawnHearts = () => {
+    if (!wrapperRef.current) return;
+    for (let i = 0; i < 4; i++) {
+      setTimeout(() => {
+        if (!wrapperRef.current) return;
+        const heart = document.createElement('span');
+        heart.textContent = '❤️';
+        heart.style.cssText = `
+          position: absolute;
+          font-size: 14px;
+          pointer-events: none;
+          left: ${30 + Math.random() * 40}%;
+          top: -4px;
+          animation: floatUp 0.7s ease forwards;
+          animation-delay: ${Math.random() * 0.1}s;
+          z-index: 10;
+        `;
+        wrapperRef.current.appendChild(heart);
+        setTimeout(() => heart.remove(), 800);
+      }, i * 60);
+    }
+  };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
     if (!isLoggedIn) {
       setShowHint(true);
       setTimeout(() => setShowHint(false), 2500);
@@ -60,62 +82,44 @@ const LikeButton = ({
     }
     if (animate) return;
     setAnimate(true);
-    setJustLiked(true);
+    if (!isLiked) spawnHearts();
     onLike();
     setTimeout(() => setAnimate(false), 400);
-    setTimeout(() => setJustLiked(false), 2000);
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={wrapperRef}>
       <button
         onClick={handleClick}
         disabled={isPending}
         className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
           isLoggedIn ? 'hover:scale-105 active:scale-95' : ''
         }`}
-        style={{ 
+        style={{
           color: isLiked ? '#B8913A' : 'rgba(26,18,8,0.6)',
           backgroundColor: isLiked ? 'rgba(184,145,58,0.12)' : 'rgba(26,18,8,0.05)',
-          transform: animate ? 'scale(1.15)' : 'scale(1)'
         }}
       >
         <Heart
           size={24}
           fill={isLiked ? '#B8913A' : 'none'}
           stroke={isLiked ? '#B8913A' : 'currentColor'}
-          className={animate ? 'animate-pulse' : ''}
+          style={{
+            animation: animate ? 'heartPop 0.3s ease' : 'none',
+            transition: 'fill 0.3s, stroke 0.3s',
+          }}
         />
-        <span className="text-base font-medium">{count}</span>
-        {(!isLiked || justLiked) && (
-          <span className="relative inline-block" style={{ width: '140px', height: '20px' }}>
-            <span
-              className="absolute inset-0 text-sm font-medium transition-all duration-500 ease-in-out"
-              style={{
-                color: 'rgba(26,18,8,0.5)',
-                opacity: !justLiked ? 1 : 0,
-                transform: !justLiked ? 'translateX(0)' : 'translateX(-8px)',
-                pointerEvents: 'none'
-              }}
-            >
-              Polub ten artykuł
-            </span>
-            <span
-              className="absolute inset-0 text-sm font-medium transition-all duration-500 ease-in-out"
-              style={{
-                color: '#B8913A',
-                opacity: justLiked ? 1 : 0,
-                transform: justLiked ? 'translateX(0)' : 'translateX(8px)',
-                pointerEvents: 'none'
-              }}
-            >
-              Polubiono
-            </span>
-          </span>
-        )}
+        <span
+          className="text-base font-medium"
+          style={{
+            animation: animate ? (isLiked ? 'counterDown 0.3s ease' : 'counterUp 0.3s ease') : 'none',
+          }}
+        >
+          {count}
+        </span>
       </button>
       {showHint && (
-        <div 
+        <div
           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-3 text-sm font-medium rounded-xl whitespace-nowrap z-10 shadow-lg"
           style={{ backgroundColor: '#1A1208', color: '#fff' }}
         >
@@ -189,6 +193,24 @@ export const BlogPost = () => {
 
   return (
     <>
+      <style>{`
+  @keyframes floatUp {
+    to { opacity: 0; transform: translateY(-40px) scale(0.5); }
+  }
+  @keyframes heartPop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  @keyframes counterDown {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(6px); }
+  }
+  @keyframes counterUp {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+`}</style>
       <PageSEO
         title={post.metaTitle ?? post.title}
         description={post.metaDescription ?? post.excerpt ?? `Przeczytaj artykuł: ${post.title} na blogu salonu Cosmo w Limanowej.`}
