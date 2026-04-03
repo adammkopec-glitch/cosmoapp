@@ -17,11 +17,13 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const stopTour = useCallback(() => {
     driverRef.current?.destroy();
+    driverRef.current = null;
     delete (window as any).__cosmoDriver;
     setIsActive(false);
   }, []);
 
   const startTour = useCallback(() => {
+    if (driverRef.current) return; // already running
     import('../tours/cosmo-tour').then(({ buildTourSteps }) => {
       const steps = buildTourSteps(stopTour);
 
@@ -33,8 +35,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
         stagePadding: 8,
         stageRadius: 8,
         popoverClass: 'cosmo-tour-popover',
-        onDestroyStarted: () => {
-          stopTour();
+        onDestroyed: () => {
+          delete (window as any).__cosmoDriver;
+          driverRef.current = null;
+          setIsActive(false);
         },
         steps,
       };
