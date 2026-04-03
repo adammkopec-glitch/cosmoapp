@@ -4,7 +4,7 @@ import { waitForElement } from './utils';
 
 async function navigateTo(path: string) {
   const { router } = await import('@/router');
-  router.navigate(path);
+  await router.navigate(path);
 }
 
 /**
@@ -43,8 +43,8 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
           await navigateTo('/uslugi');
-          await waitForElement('[data-tour="services-list"]');
-          (window as any).__cosmoDriver?.moveNext();
+          const el = await waitForElement('[data-tour="services-list"]');
+          if (el) (window as any).__cosmoDriver?.moveNext();
         },
       },
     },
@@ -59,8 +59,8 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
           await navigateTo('/rezerwacja');
-          await waitForElement('[data-tour="booking-wizard"]');
-          (window as any).__cosmoDriver?.moveNext();
+          const el = await waitForElement('[data-tour="booking-wizard"]');
+          if (el) (window as any).__cosmoDriver?.moveNext();
         },
       },
     },
@@ -74,8 +74,8 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         nextBtnText: 'Dalej →',
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
-          await waitForElement('[data-tour="service-quiz"]');
-          (window as any).__cosmoDriver?.moveNext();
+          const el = await waitForElement('[data-tour="service-quiz"]');
+          if (el) (window as any).__cosmoDriver?.moveNext();
         },
       },
     },
@@ -90,8 +90,8 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
           await navigateTo('/user/wizyty');
-          await waitForElement('[data-tour="appointments-list"]');
-          (window as any).__cosmoDriver?.moveNext();
+          const el = await waitForElement('[data-tour="appointments-list"]');
+          if (el) (window as any).__cosmoDriver?.moveNext();
         },
       },
     },
@@ -106,8 +106,8 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
           await navigateTo('/user/lojalnosc');
-          await waitForElement('[data-tour="loyalty-points-bar"]');
-          (window as any).__cosmoDriver?.moveNext();
+          const el = await waitForElement('[data-tour="loyalty-points-bar"]');
+          if (el) (window as any).__cosmoDriver?.moveNext();
         },
       },
     },
@@ -122,8 +122,8 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
           await navigateTo('/user/chat');
-          await waitForElement('[data-tour="chat-window"]');
-          (window as any).__cosmoDriver?.moveNext();
+          const el = await waitForElement('[data-tour="chat-window"]');
+          if (el) (window as any).__cosmoDriver?.moveNext();
         },
       },
     },
@@ -138,8 +138,8 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
           await navigateTo('/user/dziennik');
-          await waitForElement('[data-tour="skin-journal"]');
-          (window as any).__cosmoDriver?.moveNext();
+          const el = await waitForElement('[data-tour="skin-journal"]');
+          if (el) (window as any).__cosmoDriver?.moveNext();
         },
       },
     },
@@ -154,8 +154,8 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
           await navigateTo('/user/profil');
-          await waitForElement('[data-tour="profile-form"]');
-          (window as any).__cosmoDriver?.moveNext();
+          const el = await waitForElement('[data-tour="profile-form"]');
+          if (el) (window as any).__cosmoDriver?.moveNext();
         },
       },
     },
@@ -169,7 +169,7 @@ export function buildTourSteps(onTourEnd: () => void): DriveStep[] {
         nextBtnText: 'Dalej →',
         doneBtnText: 'Pomiń tour',
         onNextClick: async () => {
-          await markCompleted();
+          (window as any).__cosmoDriver?.moveNext();
         },
       },
     },

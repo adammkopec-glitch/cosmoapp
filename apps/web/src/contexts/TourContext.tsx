@@ -36,6 +36,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
         stageRadius: 8,
         popoverClass: 'cosmo-tour-popover',
         onDestroyed: () => {
+          // Mark onboarding completed when user skips or finishes tour
+          import('@/lib/axios').then(({ api }) => {
+            api.patch('/users/me', { onboardingCompleted: true }).catch(() => {});
+          });
           delete (window as any).__cosmoDriver;
           driverRef.current = null;
           setIsActive(false);

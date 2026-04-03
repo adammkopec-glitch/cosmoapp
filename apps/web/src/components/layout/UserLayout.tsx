@@ -104,10 +104,10 @@ export const UserLayout = () => {
   const { startTour } = useTour();
 
   useEffect(() => {
-    if (freshUser !== undefined && freshUser.onboardingCompleted === false) {
+    if (isAuthenticated && freshUser !== undefined && freshUser.onboardingCompleted === false) {
       startTour();
     }
-  }, [freshUser, startTour]);
+  }, [isAuthenticated, freshUser, startTour]);
 
   useEffect(() => {
     if (!isConnected || !socket) return;
