@@ -237,7 +237,10 @@ function StepService({
       )}
 
       {/* Quiz modal */}
-      {quizOpen && <ServiceQuiz onClose={() => setQuizOpen(false)} onAccept={handleQuizAccept} />}
+      {/* Tour anchor — always in DOM so tour can target it */}
+      <div data-tour="service-quiz">
+        {quizOpen && <ServiceQuiz onClose={() => setQuizOpen(false)} onAccept={handleQuizAccept} />}
+      </div>
 
       {/* Category filter */}
       <div className="flex gap-2 flex-wrap">
@@ -990,7 +993,7 @@ export const BookingWizard = () => {
   const progress = ((step - 1) / (STEPS.length - 1)) * 100;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-enter">
+    <div data-tour="booking-wizard" className="max-w-4xl mx-auto space-y-8 animate-enter">
       <div>
         <h1 className="text-3xl font-heading font-bold" style={{ color: '#1A1208' }}>
           Umów wizytę
