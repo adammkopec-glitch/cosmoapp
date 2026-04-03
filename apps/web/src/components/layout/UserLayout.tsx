@@ -16,6 +16,7 @@ import { useChatStore } from '@/store/chat.store';
 import { useSocket } from '@/hooks/useSocket';
 import { useAchievementNotifications } from '@/components/achievements/AchievementToast';
 import { useReviewPrompt } from '@/hooks/useReviewPrompt';
+import { useTour } from '@/hooks/useTour';
 import { ReviewPromptModal } from '@/components/reviews/ReviewPromptModal';
 import {
   LayoutDashboard,
@@ -99,6 +100,14 @@ export const UserLayout = () => {
       setUser({ ...storeUser, ...freshUser });
     }
   }, [freshUser]);
+
+  const { startTour } = useTour();
+
+  useEffect(() => {
+    if (freshUser !== undefined && freshUser.onboardingCompleted === false) {
+      startTour();
+    }
+  }, [freshUser, startTour]);
 
   useEffect(() => {
     if (!isConnected || !socket) return;
