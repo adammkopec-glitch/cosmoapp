@@ -1,0 +1,75 @@
+/* COSMO branded driver.js tooltip overrides */
+.cosmo-tour-popover {
+  background: #FAF7F4 !important;
+  border: 1px solid rgba(184, 145, 58, 0.2) !important;
+  border-radius: 16px !important;
+  padding: 20px 24px !important;
+  box-shadow: 0 8px 32px rgba(26, 18, 8, 0.12) !important;
+  font-family: inherit !important;
+  max-width: 320px !important;
+}
+
+.cosmo-tour-popover .driver-popover-title {
+  font-family: inherit !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #1A1208 !important;
+  margin-bottom: 8px !important;
+}
+
+.cosmo-tour-popover .driver-popover-description {
+  font-size: 14px !important;
+  color: rgba(26, 18, 8, 0.7) !important;
+  line-height: 1.6 !important;
+}
+
+.cosmo-tour-popover .driver-popover-footer {
+  margin-top: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.cosmo-tour-popover .driver-popover-next-btn {
+  background: #1A1208 !important;
+  color: #FAF7F4 !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 8px 20px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s !important;
+}
+
+.cosmo-tour-popover .driver-popover-next-btn:hover {
+  opacity: 0.85 !important;
+}
+
+.cosmo-tour-popover .driver-popover-close-btn,
+.cosmo-tour-popover .driver-popover-prev-btn {
+  background: transparent !important;
+  border: none !important;
+  color: rgba(26, 18, 8, 0.5) !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  padding: 8px 12px !important;
+}
+
+.cosmo-tour-popover .driver-popover-progress-text {
+  font-size: 12px !important;
+  color: rgba(26, 18, 8, 0.4) !important;
+  margin-left: auto !important;
+}
+
+/* COSMO brand label above title */
+.cosmo-tour-popover .driver-popover-title::before {
+  content: 'COSMO · ';
+  color: #B8913A;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}

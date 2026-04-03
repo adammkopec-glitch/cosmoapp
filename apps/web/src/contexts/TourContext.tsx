@@ -2,6 +2,7 @@
 import { createContext, useContext, useRef, useState, useCallback, ReactNode } from 'react';
 import { driver, type Config } from 'driver.js';
 import 'driver.js/dist/driver.css';
+import '@/tours/tour.css';
 
 interface TourContextValue {
   startTour: () => void;
