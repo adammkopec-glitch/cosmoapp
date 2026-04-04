@@ -33,7 +33,7 @@ export const ServiceList = () => {
           </p>
         </div>
       </section>
-      <section className="py-16" style={{ backgroundColor: '#FDFAF6' }}>
+      <section data-tour="services-list" className="py-16" style={{ backgroundColor: '#FDFAF6' }}>
         <div className="container">
           <ServiceListSkeleton count={6} />
         </div>
@@ -68,9 +68,9 @@ export const ServiceList = () => {
       </section>
 
       {/* Grid */}
-      <section className="py-16" style={{ backgroundColor: '#FDFAF6' }}>
+      <section data-tour="services-list" className="py-16" style={{ backgroundColor: '#FDFAF6' }}>
         <div className="container">
-          <div data-tour="services-list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services?.map((service: any) => (
               <Link key={service.id} to={`/uslugi/${service.slug}`} className="block group">
                 <div

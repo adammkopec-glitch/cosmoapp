@@ -14,7 +14,11 @@ export const UserProfile = () => {
   const { startTour } = useTour();
 
   const handleRestartTour = async () => {
-    await usersApi.updateOnboarding(false);
+    try {
+      await usersApi.updateOnboarding(false);
+    } catch {
+      // non-blocking — start tour even if PATCH fails
+    }
     startTour();
   };
   const fileInputRef = useRef<HTMLInputElement>(null);
