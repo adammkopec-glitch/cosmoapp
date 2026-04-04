@@ -266,7 +266,7 @@ export function UserSkinJournal() {
   });
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px 40px' }}>
+    <div data-tour="skin-journal" style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px 40px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingTop: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

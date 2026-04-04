@@ -109,7 +109,7 @@ export const UserProfile = () => {
   );
 
   return (
-    <div className="space-y-8 animate-enter">
+    <div className="space-y-8 animate-enter" data-tour="profile-form">
       <h1 className="text-3xl font-heading font-bold" style={{ color: '#1A1208' }}>Twój Profil</h1>
 
       {/* Avatar */}
