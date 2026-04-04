@@ -48,7 +48,9 @@
 
 ## 3. Nawigacja
 
-### Desktop (`PublicLayout`)
+### Desktop (`Navbar.tsx`)
+
+> Logika nawigacji żyje w `apps/web/src/components/layout/Navbar.tsx` (nie w `PublicLayout.tsx`). `PublicLayout.tsx` tylko renderuje `<Navbar />` jako child — modyfikujemy wyłącznie `Navbar.tsx`.
 
 - **Domyślna:** `background: transparent`, `color: espresso` — gdy hero jest ciemny: `color: ivory`
 - **Po scrollnięciu (>80px):** `background: rgba(250,247,242,0.92)`, `backdrop-filter: blur(12px)`, `border-bottom: 1px solid rgba(28,21,16,0.08)`
@@ -59,6 +61,7 @@
 ### Mobile
 
 - Hamburger: dwie poziome linie różnej długości (22px + 16px), Espresso
+- **ThemeToggle:** usuwamy `<ThemeToggle />` z nawigacji — nowy editorial look nie przewiduje dark mode toggle w headerze. Klasa `.dark` w `index.css` zostaje (nie usuwamy) ale nie będzie eksponowana użytkownikowi.
 - **Fullscreen overlay menu:**
   - Tło: `#1C1510` (Espresso), wchodzi z clip-path z góry (400ms)
   - Logo: ivory, Cormorant Garamond
@@ -99,7 +102,7 @@
 [Karty usług — scrollują normalnie pod nim]
 ```
 
-- Nagłówek sekcji: `position: sticky; top: 80px` (wysokość navu)
+- Nagłówek sekcji: `position: sticky; top: 72px` (wysokość navu w nowym designie — h-[72px]; obecny nav to h-16/64px, nowy design zwiększa do 72px dla lepszych proporcji)
 - Karty usług: clip-reveal przy wejściu w viewport (Intersection Observer)
 - Każda karta: delay `index * 100ms`
 
@@ -119,7 +122,16 @@ Nowa sekcja między usługami a blogiem (lub stopką):
 - Cytat: Cormorant Garamond italic 300, 28px, Espresso, max-width 560px, wycentrowany
 - Separator: 40px linia Caramel
 - Autor: DM Sans, 11px, uppercase, Mink
-- Dane z istniejącego API `reviews` — pobiera 1-3 recenzje z oceną 5★
+- **Dane:** hardcoded tablica 3 cytatów w komponencie (brak publicznego endpointu reviews filtrowanego po ratingu — dodanie takiego endpointu byłoby zmianą backendu, co jest poza scope). Cytaty uzupełniane ręcznie przez właściciela salonu w kodzie lub przez zmienną środowiskową.
+
+```ts
+// przykładowa struktura
+const testimonials = [
+  { quote: "...", author: "Kasia M.", label: "Klientka od 2 lat" },
+  { quote: "...", author: "Anna W.", label: "Klientka od roku" },
+  { quote: "...", author: "Marta K.", label: "Nowa klientka" },
+]
+```
 
 ### Sekcja O nas / Metamorfozy
 
@@ -137,21 +149,26 @@ Nowa sekcja między usługami a blogiem (lub stopką):
 - **Implementacja:** wrapper `<motion.div>` na `<Outlet />` w każdym layout component
 
 ### B — Clip Reveal na obrazach
-- **Hook:** `useClipReveal()` — custom hook z Intersection Observer
+- **Hook:** `useClipReveal()` — custom hook z Intersection Observer (vanilla, nie Framer Motion)
+- **Uzasadnienie:** strony publiczne mogą mieć 10-20 obrazów jednocześnie; Framer Motion `whileInView` na każdym z nich tworzy wielu obserwatorów — vanilla Intersection Observer jest lżejszy i szybszy dla wielu elementów
 - **CSS:** `clipPath: inset(100% 0 0 0)` → `inset(0 0 0 0)`, duration 700ms, easing `cubic-bezier(0.76, 0, 0.24, 1)`
-- **Użycie:** wszystkie `<img>` i zdjęcia tła w sekcjach publicznych
+- **Użycie:** wszystkie `<img>` i zdjęcia tła w sekcjach publicznych — przez komponent `<ClipRevealImage />`
 
 ### C — Sticky Sections
-- **CSS only:** `position: sticky; top: 80px` na nagłówkach sekcji
+- **CSS only:** `position: sticky; top: 72px` na nagłówkach sekcji (72px = wysokość nowego navu)
 - Dotyczy: sekcja usług na `/uslugi`, sekcja na homepage
+
+### D — (usunięty ze scope)
+> Animacja D (split text reveal) została usunięta ze scope w trakcie brainstormingu na rzecz innych efektów.
 
 ### E — Floating Booking CTA
 - **Trigger:** `window.scrollY > 400`
-- **Ukrycie:** na pathname `/rezerwacja` i `/auth/*`
+- **Ukrycie:** na pathname `/rezerwacja`, `/auth/*` i `/user/*`
 - **Animacja:** `translateY(100%)` → `translateY(0)`, 400ms
 - **Wygląd:** `position: fixed; bottom: 0; left: 0; right: 0; z-index: 40`
 - `background: rgba(28,21,16,0.88); backdrop-filter: blur(16px)`
 - Tekst po lewej (eyebrow Caramel + tytuł Ivory italic), CTA Caramel po prawej
+- **Konflikt z `MobileBottomNav`:** `MobileBottomNav` renderuje się w `PublicLayout` tylko na mobile. `FloatingBookingCTA` zastępuje `MobileBottomNav` — `MobileBottomNav` zostaje usunięty z `PublicLayout.tsx` (jego funkcjonalność nawigacyjna przechodzi do fullscreen overlay menu). `pb-20 md:pb-0` na `<main>` w `PublicLayout.tsx` zmienia się na `pb-0`.
 
 ### F — Hero Zoom-out
 - **Metoda:** scroll event listener w `HeroSlider` — `scale` interpolowany od `1.08` (scrollY=0) do `1.0` (scrollY=300)
@@ -175,15 +192,15 @@ Zmiany stylistyczne — logika bez zmian:
 
 ---
 
-## 8. Nowe Zależności
+## 8. Zależności
 
-| Pakiet | Wersja | Cel |
-|--------|--------|-----|
-| `framer-motion` | ^11 | Page transitions, animacje wejścia |
-| Google Fonts: Cormorant Garamond | — | Display typography (via `@import` w index.css) |
-| Google Fonts: DM Sans Condensed | — | Eyebrow labels (via `@import` w index.css) |
+| Pakiet | Status | Wersja | Cel |
+|--------|--------|--------|-----|
+| `framer-motion` | **już zainstalowana** | `^11.2.6` (z package.json) | Page transitions — `AnimatePresence` dodajemy do istniejącej zależności |
+| Google Fonts: Cormorant Garamond | nowa | — | Display typography (via `@import` w index.css) |
+| Google Fonts: DM Sans Condensed | nowa | — | Eyebrow labels (via `@import` w index.css) |
 
-Framer Motion to jedyna nowa zależność JS. Reszta to CSS + Google Fonts.
+**Brak nowych zależności JS** — `framer-motion` jest już w projekcie (`BeforeAfterSlider.tsx` go używa). Tylko nowe Google Fonts w CSS.
 
 ---
 
@@ -194,24 +211,30 @@ Framer Motion to jedyna nowa zależność JS. Reszta to CSS + Google Fonts.
 - `apps/web/tailwind.config.ts` — nowe kolory, nowe font families, nowe animacje
 
 **Layout:**
-- `apps/web/src/layouts/PublicLayout.tsx` — nowa nawigacja (scroll behavior, mobile overlay)
-- `apps/web/src/router.tsx` — AnimatePresence wrapper
+- `apps/web/src/components/layout/Navbar.tsx` — nowa nawigacja (scroll behavior, mobile overlay, usunięcie ThemeToggle, usunięcie MobileBottomNav)
+- `apps/web/src/components/layout/PublicLayout.tsx` — usunięcie `<MobileBottomNav />`, usunięcie `pb-20`, dodanie `<FloatingBookingCTA />`
+- `apps/web/src/router.tsx` — `AnimatePresence` wrapper na `<Outlet />`
 
-**Komponenty globalne (nowe/modyfikowane):**
+**Komponenty globalne (nowe):**
 - `apps/web/src/components/ui/FloatingBookingCTA.tsx` — NOWY
-- `apps/web/src/components/ui/ClipRevealImage.tsx` — NOWY (wrapper na obrazy)
-- `apps/web/src/components/ui/Button.tsx` — prostokątne style
-- `apps/web/src/components/ui/ServiceCard.tsx` — nowy wygląd glassmorphism
+- `apps/web/src/components/ui/ClipRevealImage.tsx` — NOWY (wrapper na obrazy z Intersection Observer)
+- `apps/web/src/hooks/useClipReveal.ts` — NOWY custom hook
+
+**Komponenty globalne (modyfikowane):**
+- `apps/web/src/components/ui/button.tsx` — prostokątne style (border-radius: 0)
+
+**Karty usług — NOWY komponent wyekstrahowany ze stron:**
+- `apps/web/src/components/ui/ServiceCard.tsx` — NOWY, wyekstrahowany z `ServiceList.tsx` i `Home.tsx` (wcześniej inline), z nowym wyglądem glassmorphism
 
 **Strony publiczne:**
-- `apps/web/src/pages/Home.tsx` — nowy hero + cytaty klientów
-- `apps/web/src/pages/ServiceList.tsx` — sticky header + nowe karty
-- `apps/web/src/pages/ServiceDetail.tsx` — clip reveal, nowe style
-- `apps/web/src/pages/About.tsx` — clip reveal na zdjęciach
-- `apps/web/src/pages/Metamorphoses.tsx` — clip reveal
+- `apps/web/src/pages/public/Home.tsx` — nowy hero + cytaty klientów (hardcoded)
+- `apps/web/src/pages/public/ServiceList.tsx` — sticky header + użycie nowego `<ServiceCard />`
+- `apps/web/src/pages/public/ServiceDetail.tsx` — `<ClipRevealImage />`, nowe style
+- `apps/web/src/pages/public/About.tsx` — `<ClipRevealImage />` na zdjęciach
+- `apps/web/src/pages/public/Metamorphoses.tsx` — `<ClipRevealImage />`
 
 **Booking & User:**
-- `apps/web/src/pages/BookingWizard.tsx` — nowy progress bar i style kroków
+- `apps/web/src/pages/user/BookingWizard.tsx` — nowy progress bar i style kroków
 - `apps/web/src/pages/user/Loyalty.tsx` — ciemna karta lojalnościowa
 
 ---
