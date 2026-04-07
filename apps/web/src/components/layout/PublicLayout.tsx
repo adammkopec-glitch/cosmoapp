@@ -1,5 +1,5 @@
-import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Outlet, useLocation, ScrollRestoration } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { FloatingBookingCTA } from '@/components/ui/FloatingBookingCTA';
@@ -12,6 +12,10 @@ const pageVariants = {
 
 export const PublicLayout = () => {
   const location = useLocation();
+  const shouldReduce = useReducedMotion();
+  const activeVariants = shouldReduce
+    ? { initial: {}, animate: {}, exit: {} }
+    : pageVariants;
 
   return (
     <div className="min-h-screen flex flex-col bg-ivory">
@@ -20,7 +24,7 @@ export const PublicLayout = () => {
         <motion.main
           key={location.pathname}
           className="flex-1 pt-[72px]"
-          variants={pageVariants}
+          variants={activeVariants}
           initial="initial"
           animate="animate"
           exit="exit"
@@ -30,6 +34,7 @@ export const PublicLayout = () => {
       </AnimatePresence>
       <Footer />
       <FloatingBookingCTA />
+      <ScrollRestoration />
     </div>
   );
 };
