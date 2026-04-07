@@ -73,7 +73,7 @@ const SlideLayer = ({ slide, active }: { slide: HeroSlide; active: boolean }) =>
         )}
         {hasButtons && (
           <div className="flex flex-wrap gap-1.5">
-            {slide.buttons!.map((btn, i) => (
+            {slide.buttons?.map((btn, i) => (
               <SlideButtonLink key={i} btn={btn} />
             ))}
           </div>
@@ -95,14 +95,14 @@ export const DashboardNewsBanner = () => {
   // restartKey is incremented on dot click to reset the autoplay interval from zero
   const [restartKey, setRestartKey] = useState(0);
 
-  const next = useCallback(
-    () => setCurrent(c => (c + 1) % slides.length),
-    [slides.length],
-  );
-  const prev = useCallback(
-    () => setCurrent(c => (c - 1 + slides.length) % slides.length),
-    [slides.length],
-  );
+  const next = useCallback(() => {
+    setCurrent(c => (c + 1) % slides.length);
+    setRestartKey(k => k + 1);
+  }, [slides.length]);
+  const prev = useCallback(() => {
+    setCurrent(c => (c - 1 + slides.length) % slides.length);
+    setRestartKey(k => k + 1);
+  }, [slides.length]);
 
   // Clamp current index when slides list shrinks (e.g. admin removes a slide during session)
   useEffect(() => {
