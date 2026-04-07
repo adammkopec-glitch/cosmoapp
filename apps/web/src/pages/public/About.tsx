@@ -55,8 +55,9 @@ export const About = () => {
     staleTime: 300_000,
   });
 
-  const [salonImgError] = useState(false);
-  const [ownerImgError] = useState(false);
+  const [salonImgError, setSalonImgError] = useState(false);
+  const [ownerImgError, setOwnerImgError] = useState(false);
+  const [empImgErrors, setEmpImgErrors] = useState<Set<string>>(new Set());
 
   const activeEmployees = (employees as any[])?.filter((e) => e.isActive) ?? [];
 
@@ -115,6 +116,7 @@ export const About = () => {
                   alt={`Salon ${SEO.siteName}`}
                   className="w-full h-72 lg:h-96"
                   wrapperClassName="w-full h-72 lg:h-96"
+                  onError={() => setSalonImgError(true)}
                 />
               ) : (
                 <div
@@ -189,6 +191,7 @@ export const About = () => {
                       alt={about.ownerName ?? 'Właścicielka'}
                       className="h-64 w-64"
                       wrapperClassName="h-64 w-64 rounded-full"
+                      onError={() => setOwnerImgError(true)}
                     />
                   </div>
                 </div>
@@ -231,7 +234,7 @@ export const About = () => {
                     boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
                   }}
                 >
-                  {emp.avatarPath ? (
+                  {emp.avatarPath && !empImgErrors.has(emp.id) ? (
                     <div
                       className="h-24 w-24 rounded-full"
                       style={{ border: '3px solid rgba(184,145,58,0.3)' }}
@@ -241,6 +244,7 @@ export const About = () => {
                         alt={emp.name}
                         className="h-24 w-24"
                         wrapperClassName="h-24 w-24 rounded-full"
+                        onError={() => setEmpImgErrors((prev) => new Set(prev).add(emp.id))}
                       />
                     </div>
                   ) : (

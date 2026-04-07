@@ -1,3 +1,4 @@
+import React from 'react';
 import { useClipReveal } from '@/hooks/useClipReveal';
 import { cn } from '@/lib/utils';
 
@@ -8,6 +9,7 @@ interface ClipRevealImageProps {
   wrapperClassName?: string;
   delay?: number;
   objectFit?: 'cover' | 'contain';
+  onError?: React.ReactEventHandler<HTMLImageElement>;
 }
 
 export const ClipRevealImage = ({
@@ -17,6 +19,7 @@ export const ClipRevealImage = ({
   wrapperClassName,
   delay = 0,
   objectFit = 'cover',
+  onError,
 }: ClipRevealImageProps) => {
   const { ref, revealed } = useClipReveal<HTMLDivElement>({ delay });
 
@@ -41,6 +44,7 @@ export const ClipRevealImage = ({
           transform: revealed ? 'scale(1)' : 'scale(1.05)',
           transition: 'transform 0.9s cubic-bezier(0.76,0,0.24,1)',
         }}
+        onError={onError}
       />
     </div>
   );
