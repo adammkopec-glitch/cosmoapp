@@ -88,8 +88,8 @@ export const HeroSlider = () => {
               alt={slide.title ?? ''}
               className="w-full h-full object-cover"
               style={{
-                transform: `scale(${scale})`,
-                willChange: 'transform',
+                transform: i === current ? `scale(${scale})` : 'scale(1)',
+                willChange: i === current ? 'transform' : 'auto',
                 transition: 'none',
               }}
             />

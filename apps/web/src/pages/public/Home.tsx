@@ -101,6 +101,8 @@ export const Home = () => {
     staleTime: 10 * 60_000,
   });
 
+  const formattedSlot = nextSlot ? formatNextSlot(nextSlot.date, nextSlot.time) : null;
+
   return (
     <div className="flex flex-col min-h-screen">
       <style>{`
@@ -222,10 +224,10 @@ export const Home = () => {
                     ) : nextSlot ? (
                       <>
                         <p className="font-heading font-bold leading-tight" style={{ color: '#1A1208' }}>
-                          {formatNextSlot(nextSlot.date, nextSlot.time).day}
+                          {formattedSlot?.day}
                         </p>
                         <p className="text-sm font-semibold" style={{ color: '#B8913A' }}>
-                          {formatNextSlot(nextSlot.date, nextSlot.time).time}
+                          {formattedSlot?.time}
                         </p>
                         <Link to={isAuthenticated ? '/rezerwacja' : '/auth/register'}>
                           <Button
