@@ -19,7 +19,7 @@ interface ServiceCardProps {
 }
 
 export const ServiceCard = ({ service, index = 0 }: ServiceCardProps) => {
-  const delay = index * 80; // ms stagger
+  const delay = Math.min(index * 80, 400); // ms stagger, capped at 400ms
 
   return (
     <Link
@@ -28,17 +28,10 @@ export const ServiceCard = ({ service, index = 0 }: ServiceCardProps) => {
       style={{ animationDelay: `${delay}ms` }}
     >
       <div
-        className="overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1"
+        className="overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1 shadow-[0_8px_32px_rgba(28,21,16,0.12)] hover:shadow-[0_16px_48px_rgba(28,21,16,0.18)]"
         style={{
-          boxShadow: '0 8px 32px rgba(28,21,16,0.12)',
           borderRadius: '4px',
         }}
-        onMouseEnter={(e) =>
-          ((e.currentTarget as HTMLElement).style.boxShadow = '0 16px 48px rgba(28,21,16,0.18)')
-        }
-        onMouseLeave={(e) =>
-          ((e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(28,21,16,0.12)')
-        }
       >
         {/* Image with glassmorphism overlay */}
         <div className="relative overflow-hidden" style={{ height: '200px' }}>
@@ -86,13 +79,13 @@ export const ServiceCard = ({ service, index = 0 }: ServiceCardProps) => {
             <span className="font-display text-[20px] text-espresso" style={{ fontWeight: 300 }}>
               {formatPrice(service.price)}
             </span>
-            {(service.avgRating !== undefined) && (
+            {(service.avgRating !== undefined && service.reviewCount !== undefined) && (
               <div className="mt-0.5">
                 <ServiceRating avgRating={service.avgRating} reviewCount={service.reviewCount ?? 0} />
               </div>
             )}
           </div>
-          <div className="px-5 py-2.5 bg-espresso text-ivory text-[9px] tracking-[0.25em] uppercase font-medium hover:bg-espresso/90 transition-colors">
+          <div aria-hidden="true" className="px-5 py-2.5 bg-espresso text-ivory text-[9px] tracking-[0.25em] uppercase font-medium hover:bg-espresso/90 transition-colors">
             Umów wizytę
           </div>
         </div>
