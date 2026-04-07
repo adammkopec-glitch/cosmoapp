@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -990,8 +990,6 @@ export const BookingWizard = () => {
     }
   };
 
-  const progress = ((step - 1) / (STEPS.length - 1)) * 100;
-
   return (
     <div data-tour="booking-wizard" className="max-w-4xl mx-auto space-y-8 animate-enter">
       <div>
@@ -1001,52 +999,42 @@ export const BookingWizard = () => {
         <p className="mt-1" style={{ color: 'rgba(26,18,8,0.5)' }}>Wypełnij formularz krok po kroku</p>
       </div>
 
-      {/* Step indicator */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          {STEPS.map((label, i) => {
-            const stepNum = i + 1;
-            const isDone = stepNum < step;
-            const isActive = stepNum === step;
-            return (
-              <div key={label} className="flex flex-col items-center gap-1.5">
+      {/* Editorial step progress bar */}
+      <div className="flex items-center gap-0 mb-8">
+        {STEPS.map((stepLabel, i) => {
+          const stepNum = i + 1;
+          const isActive = stepNum === step;
+          const isDone = stepNum < step;
+          return (
+            <React.Fragment key={stepNum}>
+              <div className="flex items-center gap-2 shrink-0">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
-                  style={
-                    isDone
-                      ? { background: '#B8913A', color: '#fff' }
-                      : isActive
-                      ? { background: '#1A1208', color: '#fff' }
-                      : { border: '1px solid rgba(0,0,0,0.15)', color: 'rgba(26,18,8,0.4)' }
-                  }
+                  className="w-6 h-6 flex items-center justify-center text-[10px] font-medium transition-colors"
+                  style={{
+                    background: isActive || isDone ? '#1C1510' : 'transparent',
+                    color: isActive || isDone ? '#FAF7F2' : '#6B5A4E',
+                    border: isActive || isDone ? 'none' : '1px solid #C4A882',
+                    borderRadius: '50%',
+                  }}
                 >
                   {isDone ? '✓' : stepNum}
                 </div>
                 <span
-                  className="text-[10px] font-medium hidden sm:block"
-                  style={
-                    isActive
-                      ? { color: '#1A1208', fontWeight: 600 }
-                      : isDone
-                      ? { color: '#B8913A' }
-                      : { color: 'rgba(26,18,8,0.4)' }
-                  }
+                  className="text-[10px] tracking-[0.2em] uppercase hidden sm:block"
+                  style={{ color: isActive ? '#1C1510' : '#6B5A4E' }}
                 >
-                  {label}
+                  {stepLabel}
                 </span>
               </div>
-            );
-          })}
-        </div>
-        <div
-          className="h-1.5 rounded-full overflow-hidden"
-          style={{ background: 'rgba(0,0,0,0.08)' }}
-        >
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progress}%`, background: '#B8913A' }}
-          />
-        </div>
+              {i < STEPS.length - 1 && (
+                <div
+                  className="flex-1 h-px mx-3 transition-colors"
+                  style={{ background: stepNum < step ? '#C4A882' : '#E0D8CC' }}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
 
       {/* Step content */}
@@ -1108,31 +1096,24 @@ export const BookingWizard = () => {
       >
         <button
           onClick={() => (step === 1 ? navigate('/uslugi') : setStep((s) => s - 1))}
-          className="py-2.5 px-5 rounded-full text-sm font-medium border transition-opacity hover:opacity-70"
-          style={{ borderColor: 'rgba(0,0,0,0.15)', color: '#1A1208' }}
+          className="px-8 py-3 border border-espresso text-espresso text-[10px] tracking-[0.25em] uppercase hover:bg-espresso hover:text-ivory transition-colors"
         >
-          {step === 1 ? 'Anuluj' : (
-            <span className="flex items-center gap-1">
-              <ChevronLeft size={16} />Wstecz
-            </span>
-          )}
+          {step === 1 ? 'Anuluj' : 'Wróć'}
         </button>
 
         {step < STEPS.length ? (
           <button
             onClick={() => setStep((s) => s + 1)}
             disabled={!canProceed()}
-            className="py-2.5 px-6 rounded-full text-sm font-semibold flex items-center gap-1 transition-opacity hover:opacity-80 disabled:opacity-40"
-            style={{ background: '#1A1208', color: '#fff' }}
+            className="px-8 py-3 bg-espresso text-ivory text-[10px] tracking-[0.25em] uppercase hover:bg-espresso/90 transition-colors disabled:opacity-40"
           >
-            Dalej <ChevronRight size={16} />
+            Dalej
           </button>
         ) : (
           <button
             onClick={handleConfirm}
             disabled={isPending || !canProceed()}
-            className="py-2.5 px-6 rounded-full text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-40"
-            style={{ background: '#1A1208', color: '#fff' }}
+            className="px-8 py-3 bg-espresso text-ivory text-[10px] tracking-[0.25em] uppercase hover:bg-espresso/90 transition-colors disabled:opacity-40"
           >
             {isPending ? 'Rezerwowanie...' : 'Potwierdź rezerwację'}
           </button>
