@@ -32,7 +32,6 @@ const SlideButtonLink = ({ btn }: { btn: SlideButton }) => {
 
 // Single slide layer — absolute positioned, fades in/out via opacity.
 const SlideLayer = ({ slide, active }: { slide: HeroSlide; active: boolean }) => {
-  const hasText = slide.heading || slide.subtitle;
   const hasButtons = slide.buttons && slide.buttons.length > 0;
 
   return (
@@ -51,37 +50,35 @@ const SlideLayer = ({ slide, active }: { slide: HeroSlide; active: boolean }) =>
           background: 'linear-gradient(to right, rgba(0,0,0,0.78) 55%, rgba(0,0,0,0.15) 100%)',
         }}
       />
-      {/* Text content — bottom-left */}
-      {(hasText || hasButtons) && (
-        <div className="absolute inset-0 flex flex-col justify-end p-[14px_16px]">
+      {/* Text content — bottom-left. Label always visible; heading/subtitle/buttons conditional. */}
+      <div className="absolute inset-0 flex flex-col justify-end p-[14px_16px]">
+        <p
+          className="text-[8px] font-bold uppercase mb-1"
+          style={{ color: '#B8913A', letterSpacing: '0.22em', fontFamily: 'sans-serif' }}
+        >
+          ✦ Nowości &amp; Aktualności
+        </p>
+        {slide.heading && (
           <p
-            className="text-[8px] font-bold uppercase mb-1"
-            style={{ color: '#B8913A', letterSpacing: '0.22em', fontFamily: 'sans-serif' }}
+            className="font-bold text-white leading-tight mb-1 text-sm md:text-base"
+            style={{ fontFamily: 'Georgia, serif' }}
           >
-            ✦ Nowości &amp; Aktualności
+            {slide.heading}
           </p>
-          {slide.heading && (
-            <p
-              className="font-bold text-white leading-tight mb-1 text-sm md:text-base"
-              style={{ fontFamily: 'Georgia, serif' }}
-            >
-              {slide.heading}
-            </p>
-          )}
-          {slide.subtitle && (
-            <p className="text-[9px] mb-2.5" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'sans-serif' }}>
-              {slide.subtitle}
-            </p>
-          )}
-          {hasButtons && (
-            <div className="flex flex-wrap gap-1.5">
-              {slide.buttons!.map((btn, i) => (
-                <SlideButtonLink key={i} btn={btn} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        )}
+        {slide.subtitle && (
+          <p className="text-[9px] mb-2.5" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'sans-serif' }}>
+            {slide.subtitle}
+          </p>
+        )}
+        {hasButtons && (
+          <div className="flex flex-wrap gap-1.5">
+            {slide.buttons!.map((btn, i) => (
+              <SlideButtonLink key={i} btn={btn} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
