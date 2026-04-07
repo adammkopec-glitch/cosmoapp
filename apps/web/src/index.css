@@ -1,0 +1,111 @@
+/* apps/web/src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+/* Note: DM Sans does not have a "Condensed" axis. The eyebrow style is achieved
+   via letter-spacing: 0.4em + font-size: 10px + uppercase — not a separate font file. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --background: 40 33% 97%;        /* #FAF7F2 ivory */
+    --foreground: 20 48% 8%;         /* #1C1510 espresso */
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 48% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 48% 8%;
+
+    --primary: 33 35% 65%;           /* #C4A882 caramel */
+    --primary-foreground: 20 48% 8%;
+
+    --secondary: 30 28% 91%;         /* #F0EBE3 cream */
+    --secondary-foreground: 20 48% 8%;
+
+    --muted: 30 28% 91%;
+    --muted-foreground: 20 17% 37%;  /* #6B5A4E mink */
+
+    --accent: 30 28% 91%;
+    --accent-foreground: 20 48% 8%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 40 33% 97%;
+
+    --border: 30 20% 88%;
+    --input: 30 20% 88%;
+    --ring: 33 35% 65%;
+
+    --radius: 0rem;                   /* editorial: no radius by default */
+  }
+
+  .dark {
+    --background: 22 20% 15%;
+    --foreground: 34 30% 96%;
+    --card: 22 15% 20%;
+    --card-foreground: 34 30% 96%;
+    --popover: 22 15% 20%;
+    --popover-foreground: 34 30% 96%;
+    --primary: 33 35% 65%;
+    --primary-foreground: 22 20% 15%;
+    --secondary: 22 10% 30%;
+    --secondary-foreground: 34 30% 96%;
+    --muted: 22 10% 25%;
+    --muted-foreground: 22 10% 65%;
+    --accent: 22 10% 30%;
+    --accent-foreground: 34 30% 96%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 34 30% 96%;
+    --border: 22 10% 25%;
+    --input: 22 10% 25%;
+    --ring: 33 35% 65%;
+  }
+}
+
+@layer base {
+  html, body { overflow-x: hidden; }
+  * { @apply border-border; }
+  body {
+    @apply bg-ivory text-espresso font-sans antialiased;
+    transition: background-color 0.2s;
+  }
+}
+
+@layer components {
+  /* Editorial eyebrow label */
+  .eyebrow {
+    @apply text-[10px] font-eyebrow font-semibold tracking-[0.4em] uppercase text-caramel;
+  }
+
+  /* Display heading — Cormorant Garamond italic */
+  .display {
+    @apply font-display font-light italic leading-[1.05] tracking-[-0.02em];
+  }
+
+  /* Glass effect */
+  .glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-dark {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: rgba(28, 21, 16, 0.88);
+  }
+}
+
+@layer utilities {
+  /* Clip reveal — applied by useClipReveal hook */
+  .clip-hidden { clip-path: inset(100% 0 0 0); }
+  .clip-visible { clip-path: inset(0% 0 0 0); transition: clip-path 0.7s cubic-bezier(0.76,0,0.24,1); }
+
+  /* Stagger delays */
+  .delay-100 { transition-delay: 100ms; }
+  .delay-200 { transition-delay: 200ms; }
+  .delay-300 { transition-delay: 300ms; }
+  .delay-400 { transition-delay: 400ms; }
+}
