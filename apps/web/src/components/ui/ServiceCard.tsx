@@ -10,7 +10,7 @@ interface ServiceCardProps {
     description?: string;
     durationMinutes: number;
     price: number;
-    imagePath?: string;
+    imagePath?: string | null;
     category?: string;
     avgRating?: number;
     reviewCount?: number;

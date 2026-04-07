@@ -71,7 +71,7 @@ export const ServiceList = () => {
 
             {/* Cards grid */}
             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {services?.map((service: any, i: number) => (
+              {services?.map((service, i) => (
                 <ServiceCard key={service.id} service={service} index={i} />
               ))}
             </div>
