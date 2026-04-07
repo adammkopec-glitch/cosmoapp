@@ -3,11 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../config/prisma', () => ({
   prisma: {
     blogPost: { findUnique: vi.fn() },
-    blogComment: {
+  blogComment: {
       findMany: vi.fn(),
       create: vi.fn(),
       findFirst: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
       update: vi.fn(),
     },
     blogCommentReaction: {
@@ -61,7 +62,7 @@ const mockComment = {
 };
 
 describe('getComments', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('returns flat list of non-spam comments for public view', async () => {
     (prisma.blogPost.findUnique as any).mockResolvedValue(mockPost);
@@ -113,7 +114,7 @@ describe('getComments', () => {
 });
 
 describe('createComment', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('creates a top-level comment', async () => {
     (prisma.blogPost.findUnique as any).mockResolvedValue(mockPost);
@@ -176,7 +177,7 @@ describe('createComment', () => {
 });
 
 describe('deleteComment', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('deletes own comment', async () => {
     (prisma.blogComment.findFirst as any).mockResolvedValue(mockComment);
@@ -201,7 +202,7 @@ describe('deleteComment', () => {
 });
 
 describe('reactToComment', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('creates reaction when none exists', async () => {
     (prisma.blogCommentReaction.findFirst as any).mockResolvedValue(null);

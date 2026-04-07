@@ -70,7 +70,7 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
     const entryUserId = (comment as any).entry?.userId;
     if (entryUserId && entryUserId !== req.user!.id) {
       const io = getIO();
-      const authorName = req.user!.name ?? 'Kosmetolog';
+      const authorName = (req.user as any).name ?? 'Kosmetolog';
       io.to(`user:${entryUserId}`).emit('journal:new-comment' as any, {
         entryId: req.params.id,
         authorName,

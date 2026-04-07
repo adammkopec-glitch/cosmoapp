@@ -206,7 +206,7 @@ export const getAllForUser = async (userId: string) => {
   const earnedMap = new Map(userAchievements.map((ua) => [ua.achievementId, ua.earnedAt]));
 
   return achievements.map((a) => {
-    const condition = a.condition as AchievementCondition;
+    const condition = a.condition as unknown as AchievementCondition;
     const earned = earnedMap.has(a.id);
     const progress = getProgress(condition, stats);
 
@@ -247,7 +247,7 @@ export const checkAndAward = async (userId: string): Promise<AwardedAchievement[
   // Find achievements the user qualifies for but hasn't earned yet
   const newlyQualified = achievements.filter((a) => {
     if (earnedIds.has(a.id)) return false;
-    const condition = a.condition as AchievementCondition;
+    const condition = a.condition as unknown as AchievementCondition;
     return checkCondition(condition, stats);
   });
 

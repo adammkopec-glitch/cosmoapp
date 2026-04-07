@@ -175,7 +175,7 @@ export async function saveTree(quizId: string, nodes: TreeNodePayload[], edges: 
           type: n.type,
           positionX: n.positionX,
           positionY: n.positionY,
-          data: n.data,
+          data: n.data as import('@prisma/client').Prisma.InputJsonValue,
         },
       });
       tempIdMap.set(n.id, created.id);
