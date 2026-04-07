@@ -1,4 +1,5 @@
 import { prisma } from '../../config/prisma';
+import { addDays, differenceInCalendarDays, startOfDay } from 'date-fns';
 import { markCouponUsed, getTierForVisits } from '../loyalty/loyalty.service';
 import { getAvailability } from '../employees/employees.service';
 import { AppError } from '../../middleware/error.middleware';
@@ -62,7 +63,7 @@ export const updateStaffNote = async (id: string, staffNote: string) => {
 };
 
 export const createAppointment = async (userId: string, data: any) => {
-  const { couponId, discountCodeId, treatmentSeriesId, ...rest } = data;
+  const { couponId, discountCodeId, treatmentSeriesId, happyHourId, ...rest } = data;
 
   const appointment = await prisma.$transaction(async (tx) => {
     const created = await tx.appointment.create({
@@ -74,6 +75,7 @@ export const createAppointment = async (userId: string, data: any) => {
         notes: rest.notes || null,
         allergies: rest.allergies || null,
         problemDescription: rest.problemDescription || null,
+        ...(happyHourId ? { happyHourId } : {}),
       },
       include: appointmentInclude,
     });
@@ -148,12 +150,27 @@ export const getUserAppointments = async (userId: string) => {
   });
 };
 
-export const getAllAppointments = async () => {
+export const getAllAppointments = async (filters?: {
+  userId?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const where: Record<string, unknown> = {};
+  if (filters?.userId) where.userId = filters.userId;
+  if (filters?.status) where.status = filters.status;
+
+  const take = filters?.limit ?? undefined;
+  const skip = take && filters?.page ? (filters.page - 1) * take : undefined;
+
   return prisma.appointment.findMany({
-    orderBy: { date: 'asc' },
+    where,
+    orderBy: { date: 'desc' },
+    take,
+    skip,
     include: {
       ...appointmentInclude,
-      user: { select: { name: true, email: true, phone: true } },
+      user: { select: { id: true, name: true, email: true, phone: true } },
     },
   });
 };
@@ -550,4 +567,87 @@ export const updateStatus = async (
   }
 
   return result.appointment;
+};
+
+export interface FollowUpReminder {
+  serviceId: string;
+  serviceName: string;
+  serviceSlug: string;
+  lastVisitDate: string;
+  recommendedReturnDate: string;
+  daysOverdue: number;
+}
+
+interface CompletedAptForReminder {
+  serviceId: string;
+  serviceName: string;
+  serviceSlug: string;
+  lastVisitDate: Date;
+  recommendedIntervalDays: number;
+}
+
+// Pure calculation — exported for unit testing.
+// Uses date-fns for DST-safe calendar-day arithmetic.
+export function computeFollowUpReminders(
+  apts: CompletedAptForReminder[],
+  today: Date
+): FollowUpReminder[] {
+  const todayDay = startOfDay(today);
+
+  return apts
+    .map((apt) => {
+      const lastVisit = startOfDay(apt.lastVisitDate);
+      const triggerDays = Math.floor(apt.recommendedIntervalDays * 0.85);
+      const triggerDate = addDays(lastVisit, triggerDays);
+      const recommendedReturnDate = addDays(lastVisit, apt.recommendedIntervalDays);
+
+      if (todayDay < triggerDate) return null;
+
+      const daysOverdue = differenceInCalendarDays(todayDay, recommendedReturnDate);
+
+      return {
+        serviceId: apt.serviceId,
+        serviceName: apt.serviceName,
+        serviceSlug: apt.serviceSlug,
+        lastVisitDate: apt.lastVisitDate.toISOString(),
+        recommendedReturnDate: recommendedReturnDate.toISOString(),
+        daysOverdue,
+      } satisfies FollowUpReminder;
+    })
+    .filter((r): r is FollowUpReminder => r !== null)
+    .sort((a, b) => b.daysOverdue - a.daysOverdue);
+}
+
+export const getFollowUpReminders = async (userId: string): Promise<FollowUpReminder[]> => {
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      userId,
+      status: 'COMPLETED',
+      service: { recommendedIntervalDays: { not: null } },
+    },
+    include: {
+      service: {
+        select: { id: true, name: true, slug: true, recommendedIntervalDays: true },
+      },
+    },
+    orderBy: { date: 'desc' },
+  });
+
+  // Keep only the most recent appointment per serviceId
+  const latestByService = new Map<string, typeof appointments[number]>();
+  for (const apt of appointments) {
+    if (!latestByService.has(apt.serviceId)) {
+      latestByService.set(apt.serviceId, apt);
+    }
+  }
+
+  const input: CompletedAptForReminder[] = [...latestByService.values()].map((apt) => ({
+    serviceId: apt.service.id,
+    serviceName: apt.service.name,
+    serviceSlug: apt.service.slug,
+    lastVisitDate: new Date(apt.date),
+    recommendedIntervalDays: apt.service.recommendedIntervalDays!,
+  }));
+
+  return computeFollowUpReminders(input, new Date());
 };
