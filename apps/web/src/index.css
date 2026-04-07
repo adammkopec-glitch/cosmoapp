@@ -9,31 +9,36 @@
 @tailwind utilities;
 
 @layer base {
+  /* HSL values below are approximations of the hex color palette defined in tailwind.config.ts.
+     The hex values in tailwind.config.ts are the SOURCE OF TRUTH for the editorial color scheme.
+     These HSL values are used here for CSS variables to enable seamless dark mode compatibility
+     in shadcn/radix component libraries. When updating colors, modify the hex values in
+     tailwind.config.ts first, then update the corresponding HSL approximations here. */
   :root {
     color-scheme: light;
-    --background: 40 33% 97%;        /* #FAF7F2 ivory */
-    --foreground: 20 48% 8%;         /* #1C1510 espresso */
+    --background: 38 44% 97%;        /* #FAF7F2 ivory */
+    --foreground: 25 27% 9%;         /* #1C1510 espresso */
 
     --card: 0 0% 100%;
-    --card-foreground: 20 48% 8%;
+    --card-foreground: 25 27% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 48% 8%;
+    --popover-foreground: 25 27% 9%;
 
     --primary: 33 35% 65%;           /* #C4A882 caramel */
-    --primary-foreground: 20 48% 8%;
+    --primary-foreground: 25 27% 9%;
 
     --secondary: 30 28% 91%;         /* #F0EBE3 cream */
-    --secondary-foreground: 20 48% 8%;
+    --secondary-foreground: 25 27% 9%;
 
     --muted: 30 28% 91%;
-    --muted-foreground: 20 17% 37%;  /* #6B5A4E mink */
+    --muted-foreground: 25 16% 36%;  /* #6B5A4E mink */
 
     --accent: 30 28% 91%;
-    --accent-foreground: 20 48% 8%;
+    --accent-foreground: 25 27% 9%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 40 33% 97%;
+    --destructive-foreground: 38 44% 97%;
 
     --border: 30 20% 88%;
     --input: 30 20% 88%;

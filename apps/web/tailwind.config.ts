@@ -60,7 +60,7 @@ export default {
         ivory: '#FAF7F2',
         cream: '#F0EBE3',
         caramel: '#C4A882',
-        walnut: '#8C6A4A',
+        walnut: '#8C6A4A',    // deep accent — used in service card shadows and deep hover states
         espresso: '#1C1510',
         mink: '#6B5A4E',
       },
