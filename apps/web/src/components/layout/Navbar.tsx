@@ -1,24 +1,30 @@
-// filepath: apps/web/src/components/layout/Navbar.tsx
-import { useState } from 'react';
+// apps/web/src/components/layout/Navbar.tsx
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { authApi } from '@/api/auth.api';
-import { Menu, X } from 'lucide-react';
-import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_LINKS = [
-  { to: '/uslugi', label: 'Usługi' },
-  { to: '/metamorfozy', label: 'Metamorfozy' },
-  { to: '/blog', label: 'Blog' },
-  { to: '/o-nas', label: 'O nas' },
-  { to: '/kontakt', label: 'Kontakt' },
-  { to: '/program-lojalnosciowy', label: 'Lojalność' },
+  { to: '/uslugi', label: 'Usługi', num: '01' },
+  { to: '/metamorfozy', label: 'Metamorfozy', num: '02' },
+  { to: '/blog', label: 'Blog', num: '03' },
+  { to: '/o-nas', label: 'O nas', num: '04' },
+  { to: '/kontakt', label: 'Kontakt', num: '05' },
+  { to: '/program-lojalnosciowy', label: 'Lojalność', num: '06' },
 ];
 
 export const Navbar = () => {
   const { isAuthenticated, isAdmin, isEmployee, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -35,140 +41,200 @@ export const Navbar = () => {
   const panelLabel = isAdmin ? 'Panel Admina' : isEmployee ? 'Panel Pracownika' : 'Moje Konto';
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-background border-b border-border/50">
-      <div className="container grid grid-cols-3 h-16 items-center">
-        {/* Logo */}
-        <Link
-          to="/"
-          className="font-heading font-bold text-2xl text-foreground"
-          style={{ letterSpacing: '-0.02em' }}
-        >
-          Cosmo
-        </Link>
+    <>
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        style={{
+          height: '72px',
+          background: scrolled ? 'rgba(250,247,242,0.92)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(12px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
+          borderBottom: scrolled ? '1px solid rgba(28,21,16,0.08)' : 'none',
+        }}
+      >
+        <div className="container h-full flex items-center justify-between">
+          {/* Logo */}
+          <Link
+            to="/"
+            className="font-display text-[13px] tracking-[0.45em] uppercase"
+            style={{ color: scrolled ? '#1C1510' : '#FAF7F2', fontStyle: 'normal', fontWeight: 300 }}
+          >
+            Cosmo
+          </Link>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex justify-center items-center gap-7">
-          {NAV_LINKS.map(({ to, label }) => (
-            <Link
-              key={to}
-              to={to}
-              className="text-sm font-medium text-foreground transition-colors hover:text-primary"
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Desktop auth */}
-        <div className="hidden md:flex justify-end items-center gap-3">
-          <ThemeToggle />
-          {isAuthenticated ? (
-            <>
-              <Link
-                to="/rezerwacja"
-                data-tour="navbar-booking-btn"
-                className="text-sm font-medium px-5 py-2 rounded-full bg-foreground text-background transition-opacity hover:opacity-90"
-              >
-                Rezerwacja
-              </Link>
-              <Link
-                to={panelLink}
-                className="text-sm font-medium px-4 py-2 rounded-full border border-border text-foreground transition-colors hover:bg-accent"
-              >
-                {panelLabel}
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-sm font-medium px-4 py-2 rounded-full text-foreground transition-colors hover:bg-accent"
-              >
-                Wyloguj
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/auth/login"
-                className="text-sm font-medium px-4 py-2 rounded-full text-foreground transition-colors hover:bg-accent"
-              >
-                Zaloguj
-              </Link>
-              <Link
-                to="/auth/register"
-                className="text-sm font-medium px-5 py-2 rounded-full bg-foreground text-background transition-opacity hover:opacity-90"
-              >
-                Rejestracja
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* Hamburger */}
-        <button
-          className="md:hidden p-2 rounded-lg justify-self-end text-foreground"
-          onClick={() => setMobileOpen((o) => !o)}
-          aria-label={mobileOpen ? 'Zamknij menu' : 'Otwórz menu'}
-        >
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-border/50 bg-background">
-          <div className="container py-4 flex flex-col gap-1">
+          {/* Desktop links */}
+          <div className="hidden md:flex items-center gap-8">
             {NAV_LINKS.map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
-                className="text-sm font-medium py-2.5 px-3 rounded-lg text-foreground transition-colors hover:bg-accent"
-                onClick={() => setMobileOpen(false)}
+                className="text-[11px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+                style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.75)' }}
               >
                 {label}
               </Link>
             ))}
-            <div className="mt-3 pt-3 flex flex-col gap-2 border-t border-border/50">
-              <div className="flex items-center justify-between px-3 py-1">
-                <span className="text-sm text-muted-foreground">Motyw</span>
-                <ThemeToggle />
-              </div>
+          </div>
+
+          {/* Desktop CTA */}
+          <div className="hidden md:flex items-center gap-3">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/rezerwacja"
+                  data-tour="navbar-booking-btn"
+                  className="px-6 py-2.5 text-[10px] tracking-[0.25em] uppercase font-medium transition-opacity hover:opacity-90"
+                  style={{
+                    background: scrolled ? '#1C1510' : '#FAF7F2',
+                    color: scrolled ? '#FAF7F2' : '#1C1510',
+                  }}
+                >
+                  Rezerwacja
+                </Link>
+                <Link
+                  to={panelLink}
+                  className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+                  style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.6)' }}
+                >
+                  {panelLabel}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+                  style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.6)' }}
+                >
+                  Wyloguj
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/auth/login"
+                  className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+                  style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.7)' }}
+                >
+                  Zaloguj
+                </Link>
+                <Link
+                  to="/rezerwacja"
+                  className="px-6 py-2.5 text-[10px] tracking-[0.25em] uppercase font-medium transition-opacity hover:opacity-90"
+                  style={{
+                    background: scrolled ? '#1C1510' : '#FAF7F2',
+                    color: scrolled ? '#FAF7F2' : '#1C1510',
+                  }}
+                >
+                  Rezerwacja
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Hamburger — mobile only */}
+          <button
+            className="md:hidden flex flex-col gap-1.5 p-2"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-label={mobileOpen ? 'Zamknij menu' : 'Otwórz menu'}
+          >
+            <span
+              className="block h-px w-[22px] transition-all duration-300"
+              style={{ background: scrolled ? '#1C1510' : '#FAF7F2' }}
+            />
+            <span
+              className="block h-px w-[14px] transition-all duration-300"
+              style={{ background: scrolled ? '#1C1510' : '#FAF7F2' }}
+            />
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile fullscreen overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ clipPath: 'inset(0 0 100% 0)' }}
+            animate={{ clipPath: 'inset(0 0 0% 0)' }}
+            exit={{ clipPath: 'inset(0 0 100% 0)' }}
+            transition={{ duration: 0.4, ease: [0.76, 0, 0.24, 1] }}
+            className="fixed inset-0 z-50 flex flex-col"
+            style={{ background: '#1C1510' }}
+          >
+            {/* Header row */}
+            <div className="container flex items-center justify-between" style={{ height: '72px' }}>
+              <Link
+                to="/"
+                onClick={() => setMobileOpen(false)}
+                className="font-display text-[13px] tracking-[0.45em] uppercase text-ivory"
+                style={{ fontStyle: 'normal', fontWeight: 300 }}
+              >
+                Cosmo
+              </Link>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="text-ivory text-2xl leading-none p-2"
+                aria-label="Zamknij menu"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Nav links */}
+            <div className="container flex-1 flex flex-col justify-center gap-1">
+              {NAV_LINKS.map(({ to, label, num }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-baseline gap-4 py-3 border-b border-ivory/10 group"
+                >
+                  <span className="eyebrow text-caramel">{num}</span>
+                  <span
+                    className="font-display text-[28px] text-ivory transition-colors group-hover:text-caramel"
+                    style={{ fontStyle: 'italic', fontWeight: 300 }}
+                  >
+                    {label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Bottom area */}
+            <div className="container pb-8 flex flex-col gap-3 border-t border-ivory/10 pt-6">
               {isAuthenticated ? (
                 <>
                   <Link
                     to={panelLink}
-                    className="text-sm font-medium py-2.5 px-3 rounded-lg border border-border text-foreground text-center transition-colors hover:bg-accent"
                     onClick={() => setMobileOpen(false)}
+                    className="text-[10px] tracking-[0.3em] uppercase text-ivory/60 hover:text-ivory transition-colors py-2"
                   >
                     {panelLabel}
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-sm font-medium py-2.5 px-3 rounded-lg text-left text-foreground transition-colors hover:bg-accent"
+                    className="text-[10px] tracking-[0.3em] uppercase text-ivory/60 hover:text-ivory transition-colors text-left py-2"
                   >
                     Wyloguj
                   </button>
                 </>
               ) : (
-                <>
-                  <Link
-                    to="/auth/login"
-                    className="text-sm font-medium py-2.5 px-3 rounded-lg text-center border border-border text-foreground transition-colors hover:bg-accent"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Zaloguj
-                  </Link>
-                  <Link
-                    to="/auth/register"
-                    className="text-sm font-medium py-2.5 px-3 rounded-lg text-center bg-foreground text-background transition-opacity hover:opacity-90"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Rejestracja
-                  </Link>
-                </>
+                <Link
+                  to="/auth/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-[10px] tracking-[0.3em] uppercase text-ivory/60 hover:text-ivory transition-colors py-2"
+                >
+                  Zaloguj się
+                </Link>
               )}
+              <Link
+                to="/rezerwacja"
+                onClick={() => setMobileOpen(false)}
+                className="mt-2 py-4 text-center text-[10px] tracking-[0.3em] uppercase font-medium bg-caramel text-espresso hover:bg-caramel/90 transition-colors"
+              >
+                Zarezerwuj wizytę
+              </Link>
             </div>
-          </div>
-        </div>
-      )}
-    </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
