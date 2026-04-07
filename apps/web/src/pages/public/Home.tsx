@@ -428,58 +428,6 @@ export const Home = () => {
           </div>
         </section>
 
-        {/* ── 5. TESTIMONIALS ── */}
-        <section className="py-20" style={{ backgroundColor: '#F5F0EB' }}>
-          <div className="container max-w-6xl mx-auto px-6">
-            <div className="mb-12 text-center">
-              <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: '#B8913A' }}>
-                Opinie
-              </p>
-              <h2 className="font-heading text-4xl font-bold" style={{ color: '#1A1208' }}>
-                Co mówią nasze klientki
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {[
-                {
-                  text: 'Laminowanie rzęs zrobione perfekcyjnie. Efekt jest naturalny i utrzymuje się znacznie dłużej niż spodziewałam się. Na pewno wracam!',
-                  author: 'Karolina',
-                  location: 'Limanowa',
-                },
-                {
-                  text: 'Wreszcie znalazłam podologa, który rzeczywiście pomógł z wrastającym paznokciem. Profesjonalne podejście i pełna bezbolesność zabiegu.',
-                  author: 'Marta',
-                  location: 'Mordarka',
-                },
-                {
-                  text: 'Manicure hybrydowy trzyma się już trzeci tydzień jak nowy. Miła atmosfera i szybka obsługa. Polecam wszystkim z okolic Limanowej.',
-                  author: 'Agnieszka',
-                  location: 'Laskowa',
-                },
-              ].map(({ text, author, location }) => (
-                <div
-                  key={author}
-                  className="bg-white p-8 shadow-sm"
-                  style={{ borderRadius: '20px', border: '1px solid rgba(0,0,0,0.07)' }}
-                >
-                  <p className="text-lg mb-1" style={{ color: '#B8913A' }}>★★★★★</p>
-                  <p
-                    className="font-heading italic text-base leading-relaxed mb-6"
-                    style={{ color: '#1A1208' }}
-                  >
-                    &ldquo;{text}&rdquo;
-                  </p>
-                  <div>
-                    <p className="font-semibold text-sm" style={{ color: '#1A1208' }}>{author}</p>
-                    <p className="text-xs" style={{ color: 'rgba(26,18,8,0.5)' }}>{location}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ── 6. CTA ── */}
         <section className="py-20" style={{ backgroundColor: '#FDFAF6' }}>
           <div className="container max-w-6xl mx-auto px-6">
