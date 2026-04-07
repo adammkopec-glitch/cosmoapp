@@ -30,13 +30,14 @@ export const ServiceCard = ({ service, index = 0 }: ServiceCardProps) => {
       <div
         className="overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1"
         style={{
-          boxShadow: '0 8px 32px rgba(28,21,16,0.10)',
+          boxShadow: '0 8px 32px rgba(28,21,16,0.12)',
+          borderRadius: '4px',
         }}
         onMouseEnter={(e) =>
           ((e.currentTarget as HTMLElement).style.boxShadow = '0 16px 48px rgba(28,21,16,0.18)')
         }
         onMouseLeave={(e) =>
-          ((e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(28,21,16,0.10)')
+          ((e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(28,21,16,0.12)')
         }
       >
         {/* Image with glassmorphism overlay */}
@@ -58,8 +59,8 @@ export const ServiceCard = ({ service, index = 0 }: ServiceCardProps) => {
           <div
             className="absolute bottom-0 left-0 right-0 p-4 glass"
             style={{
-              background: 'rgba(250,247,242,0.08)',
-              borderTop: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(250,247,242,0.1)',
+              borderTop: '1px solid rgba(255,255,255,0.15)',
             }}
           >
             {service.category && (
