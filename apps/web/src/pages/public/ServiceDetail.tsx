@@ -53,7 +53,6 @@ export const ServiceDetail = () => {
           {service.imagePath && (
             <div
               className="overflow-hidden mb-10 shadow-xl"
-              style={{ borderRadius: '20px' }}
             >
               <ClipRevealImage
                 src={service.imagePath}
