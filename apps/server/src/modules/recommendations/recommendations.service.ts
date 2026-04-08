@@ -140,3 +140,44 @@ export const getMyRecommendations = async (userId: string) => {
 
   return Object.values(grouped);
 };
+
+export const getRecommendationsByUser = async (userId: string) => {
+  const recommendations = await prisma.appointmentRecommendation.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      appointment: {
+        select: {
+          id: true,
+          date: true,
+          service: { select: { name: true } },
+        },
+      },
+      product: true,
+      addedBy: { select: { name: true } },
+    },
+  });
+
+  // Group by appointment (same shape as getMyRecommendations)
+  const grouped: Record<string, {
+    appointmentId: string;
+    appointmentDate: string;
+    serviceName: string;
+    recommendations: typeof recommendations;
+  }> = {};
+
+  for (const rec of recommendations) {
+    const key = rec.appointmentId;
+    if (!grouped[key]) {
+      grouped[key] = {
+        appointmentId: rec.appointment.id,
+        appointmentDate: rec.appointment.date.toISOString(),
+        serviceName: rec.appointment.service.name,
+        recommendations: [],
+      };
+    }
+    grouped[key].recommendations.push(rec);
+  }
+
+  return Object.values(grouped);
+};

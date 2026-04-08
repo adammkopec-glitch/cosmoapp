@@ -53,3 +53,12 @@ export const getMyRecommendations = async (req: Request, res: Response, next: Ne
     next(error);
   }
 };
+
+export const getByUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const groups = await recommendationsService.getRecommendationsByUser(req.params.id);
+    res.json({ status: 'success', data: { groups } });
+  } catch (error) {
+    next(error);
+  }
+};
