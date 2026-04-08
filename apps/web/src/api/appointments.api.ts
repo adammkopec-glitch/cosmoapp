@@ -19,13 +19,8 @@ export const appointmentsApi = {
     status?: string;
     page?: number;
     limit?: number;
-  } | unknown) => {
-    // Handle both React Query context and custom params
-    // React Query passes { queryKey, signal, meta, ... } but we only care about our custom params
-    const queryParams = params && typeof params === 'object' && !('queryKey' in params) && !('signal' in params)
-      ? params
-      : undefined;
-    const res = await api.get('/appointments', { params: queryParams });
+  }) => {
+    const res = await api.get('/appointments', { params });
     return res.data.data.appointments;
   },
   create: async (data: {
