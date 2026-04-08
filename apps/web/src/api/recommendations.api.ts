@@ -52,4 +52,8 @@ export const recommendationsApi = {
     const res = await api.get(`/appointments/${appointmentId}/recommendations`);
     return res.data.data.recommendations;
   },
+  getByUser: async (userId: string): Promise<RecommendationGroup[]> => {
+    const res = await api.get(`/users/${userId}/recommendations`);
+    return res.data.data.groups;
+  },
 };

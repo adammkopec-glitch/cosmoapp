@@ -34,4 +34,8 @@ export const usersApi = {
   updateOnboarding: async (completed: boolean): Promise<void> => {
     await api.patch('/users/me', { onboardingCompleted: completed });
   },
+  getById: async (userId: string): Promise<User> => {
+    const res = await api.get(`/users/${userId}`);
+    return res.data.data.user;
+  },
 };
