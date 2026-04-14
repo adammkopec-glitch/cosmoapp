@@ -301,9 +301,6 @@ export function UserSkinJournal() {
 
       {!isLoading && data?.entries.length === 0 && !showForm && (
         <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: 16, border: '1px solid #e5e0d8' }}>
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: '#fdf6ec', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <BookOpen size={30} color="#B8913A" />
-          </div>
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true" className="mx-auto mb-3 opacity-40">
             <rect x="10" y="6" width="28" height="36" rx="3" stroke="#C4A882" strokeWidth="1.5"/>
             <path d="M16 16h16M16 22h16M16 28h10" stroke="#C4A882" strokeWidth="1.5" strokeLinecap="round"/>

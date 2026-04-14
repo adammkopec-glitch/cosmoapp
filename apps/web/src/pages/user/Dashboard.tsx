@@ -136,9 +136,9 @@ export const UserDashboard = () => {
           </span>
           {(() => {
             const TIERS = [
-              { label: 'Brąz', segMin: 0, segMax: 499 },
-              { label: 'Srebro', segMin: 499, segMax: 1499 },
-              { label: 'Złoto', segMin: 1499, segMax: 1500 },
+              { label: 'Brąz',   segMin: 0,    segMax: 500  },
+              { label: 'Srebro', segMin: 500,  segMax: 1500 },
+              { label: 'Złoto',  segMin: 1500, segMax: 3000 },
             ];
             const points = user?.loyaltyPoints ?? 0;
             return (
