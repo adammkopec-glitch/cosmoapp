@@ -4,8 +4,18 @@ import { BookOpen, Plus, X, Trash2, ChevronLeft, ChevronRight, ChevronDown, Chev
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { skinJournalApi, type SkinJournalEntry } from '@/api/skin-journal.api';
+import { SummaryModal } from '@/components/skin-journal/SummaryModal';
 
 const MOODS: string[] = ['😟', '😕', '😐', '🙂', '😊'];
+
+const JOURNAL_CATEGORIES = [
+  { slug: 'stopy',       label: '#stopy' },
+  { slug: 'twarz',       label: '#twarz' },
+  { slug: 'wlosy',       label: '#włosy' },
+  { slug: 'skora_ciala', label: '#skóra ciała' },
+] as const;
+
+type CategorySlug = typeof JOURNAL_CATEGORIES[number]['slug'];
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -96,19 +106,24 @@ function CommentSection({ entry, userId }: { entry: SkinJournalEntry; userId: st
 
 function AdminEntryCard({ entry }: { entry: SkinJournalEntry }) {
   return (
-    <div style={{ background: '#fff', border: '2px solid rgba(26,18,8,0.15)', borderRadius: 14, padding: '18px 20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#1A1208', color: '#fff' }}>
+    <div className="journal-admin-card">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, rowGap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#1A1208', color: '#fff', whiteSpace: 'nowrap', flexShrink: 0 }}>
           👩‍⚕️ Notatka kosmetologa
         </span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#6B6560' }}>{formatDate(entry.date)}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#6B6560', flexShrink: 0 }}>{formatDate(entry.date)}</span>
       </div>
       {entry.notes && <p style={{ fontSize: 14, color: '#4B4036', lineHeight: 1.6, margin: 0 }}>{entry.notes}</p>}
       {entry.tags.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-          {entry.tags.map((tag) => (
-            <span key={tag} style={{ fontSize: 11, padding: '3px 10px', background: 'rgba(26,18,8,0.07)', color: '#4B4036', borderRadius: 20, fontWeight: 500 }}>{tag}</span>
-          ))}
+          {entry.tags.map((tag) => {
+            const cat = JOURNAL_CATEGORIES.find((c) => c.slug === tag);
+            return (
+              <span key={tag} style={{ fontSize: 11, fontWeight: 700, color: '#4B4036' }}>
+                {cat ? cat.label : `#${tag}`}
+              </span>
+            );
+          })}
         </div>
       )}
     </div>
@@ -123,7 +138,7 @@ function EntryCard({ entry, userId, onDelete }: { entry: SkinJournalEntry; userI
   const mood = entry.mood;
 
   return (
-    <div style={{ background: '#fff', border: '1px solid #e5e0d8', borderRadius: 14, padding: '18px 20px' }}>
+    <div className="journal-entry-card">
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
           <p style={{ fontSize: 12, color: '#999', margin: '0 0 4px' }}>{formatDate(entry.date)}</p>
@@ -154,10 +169,15 @@ function EntryCard({ entry, userId, onDelete }: { entry: SkinJournalEntry; userI
       {entry.notes && <p style={{ fontSize: 14, color: '#444', lineHeight: 1.6, margin: '0 0 12px' }}>{entry.notes}</p>}
 
       {entry.tags.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: entry.comments.length > 0 ? 10 : 0 }}>
-          {entry.tags.map((tag) => (
-            <span key={tag} style={{ fontSize: 11, padding: '3px 10px', background: '#fdf6ec', color: '#B8913A', border: '1px solid #f0e0c0', borderRadius: 20, fontWeight: 500 }}>{tag}</span>
-          ))}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: entry.comments.length > 0 ? 10 : 0 }}>
+          {entry.tags.map((tag) => {
+            const cat = JOURNAL_CATEGORIES.find((c) => c.slug === tag);
+            return (
+              <span key={tag} style={{ fontSize: 12, fontWeight: 700, color: '#B8913A' }}>
+                {cat ? cat.label : `#${tag}`}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -173,7 +193,7 @@ function AddEntryForm({ onClose }: { onClose: () => void }) {
   const [mood, setMood] = useState(3);
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState(getTodayString());
-  const [tagsRaw, setTagsRaw] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<CategorySlug[]>([]);
   const [photo, setPhoto] = useState<File | undefined>(undefined);
 
   const mutation = useMutation({
@@ -182,8 +202,7 @@ function AddEntryForm({ onClose }: { onClose: () => void }) {
       fd.append('mood', String(mood));
       fd.append('date', date);
       if (notes.trim()) fd.append('notes', notes.trim());
-      const tags = tagsRaw.split(',').map((t) => t.trim()).filter(Boolean);
-      tags.forEach((t) => fd.append('tags', t));
+      selectedCategories.forEach((t) => fd.append('tags', t));
       if (photo) fd.append('photo', photo);
       return skinJournalApi.createEntry(fd);
     },
@@ -227,8 +246,35 @@ function AddEntryForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: 13, color: '#666', marginBottom: 6, fontWeight: 500 }}>Tagi (opcjonalnie, oddzielone przecinkami)</label>
-        <input type="text" value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="np. nawilżenie, trądzik, po zabiegu" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e0d8', borderRadius: 8, fontSize: 14, color: '#1A1208', background: '#faf9f7', boxSizing: 'border-box' }} />
+        <label style={{ display: 'block', fontSize: 13, color: '#666', marginBottom: 8, fontWeight: 500 }}>Kategoria (opcjonalnie)</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {JOURNAL_CATEGORIES.map((cat) => {
+            const active = selectedCategories.includes(cat.slug);
+            return (
+              <button
+                key={cat.slug}
+                type="button"
+                onClick={() =>
+                  setSelectedCategories((prev) =>
+                    active ? prev.filter((s) => s !== cat.slug) : [...prev, cat.slug]
+                  )
+                }
+                style={{
+                  padding: '8px 14px',
+                  border: active ? '2px solid #B8913A' : '2px solid #e5e0d8',
+                  borderRadius: 20,
+                  background: active ? '#fdf6ec' : '#faf9f7',
+                  color: active ? '#B8913A' : '#888',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div style={{ marginBottom: 20 }}>
@@ -237,7 +283,7 @@ function AddEntryForm({ onClose }: { onClose: () => void }) {
         {photo && <p style={{ fontSize: 12, color: '#B8913A', marginTop: 4 }}>{photo.name}</p>}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+      <div className="journal-form-actions">
         <button onClick={onClose} style={{ padding: '10px 20px', border: '1px solid #e5e0d8', borderRadius: 8, background: '#fff', color: '#666', cursor: 'pointer', fontSize: 14 }}>Anuluj</button>
         <button onClick={() => mutation.mutate()} disabled={mutation.isPending} style={{ padding: '10px 20px', border: 'none', borderRadius: 8, background: '#B8913A', color: '#fff', cursor: mutation.isPending ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, opacity: mutation.isPending ? 0.7 : 1 }}>
           {mutation.isPending ? 'Dodawanie...' : 'Dodaj wpis'}
@@ -254,11 +300,20 @@ export function UserSkinJournal() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
+  const [showSummary, setShowSummary] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['journal', page],
     queryFn: () => skinJournalApi.getJournal(page),
   });
+
+  const { data: summaryData } = useQuery({
+    queryKey: ['journal-summary', undefined, 'all'],
+    queryFn: () => skinJournalApi.getSummary('all'),
+    staleTime: 60_000,
+  });
+
+  const streak = summaryData?.activity.currentStreak ?? 0;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => skinJournalApi.deleteEntry(id),
@@ -272,22 +327,37 @@ export function UserSkinJournal() {
   return (
     <div data-tour="skin-journal" style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px 40px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingTop: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #B8913A, #d4a84b)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="journal-header">
+        <div className="journal-header-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #B8913A, #d4a84b)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <BookOpen size={22} color="#fff" />
           </div>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-heading, serif)', fontSize: 22, color: '#1A1208', margin: 0, fontWeight: 700 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ fontFamily: 'var(--font-heading, serif)', fontSize: 20, color: '#1A1208', margin: 0, fontWeight: 700 }}>
               Dziennik Kosmetologa
             </h1>
-            <p style={{ fontSize: 13, color: '#999', margin: 0 }}>Twój osobisty dziennik pielęgnacji</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <p style={{ fontSize: 13, color: '#999', margin: 0 }}>Twój osobisty dziennik pielęgnacji</p>
+              {streak > 0 && (
+                <span className="journal-streak" style={{ background: streak >= 7 ? '#fef3c7' : '#fdf6ec', border: `1px solid ${streak >= 7 ? '#fcd34d' : '#e8d5a0'}`, color: streak >= 7 ? '#d97706' : '#B8913A' }}>
+                  🔥 {streak} {streak === 1 ? 'dzień' : 'dni'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         {!showForm && (
-          <button onClick={() => setShowForm(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '12px 16px', background: '#B8913A', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600, minWidth: 120 }}>
-            <Plus size={16} /> Nowy wpis
-          </button>
+          <div className="journal-header-buttons">
+            <button
+              onClick={() => setShowSummary(true)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '12px 16px', background: '#fdf6ec', color: '#B8913A', border: '1px solid #e8d5a0', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+            >
+              Podsumowanie
+            </button>
+            <button onClick={() => setShowForm(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '12px 16px', background: '#B8913A', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+              <Plus size={16} /> Nowy wpis
+            </button>
+          </div>
         )}
       </div>
 
@@ -336,7 +406,86 @@ export function UserSkinJournal() {
         </>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {showSummary && <SummaryModal onClose={() => setShowSummary(false)} />}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .journal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 24px;
+          padding-top: 8px;
+          gap: 12px;
+        }
+        .journal-header-buttons {
+          display: flex;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+        .journal-streak {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          padding: 2px 8px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+        .journal-entry-card {
+          background: #fff;
+          border: 1px solid #e5e0d8;
+          border-radius: 14px;
+          padding: 18px 20px;
+        }
+        .journal-admin-card {
+          background: #fff;
+          border: 2px solid rgba(26,18,8,0.15);
+          border-radius: 14px;
+          padding: 18px 20px;
+        }
+        .journal-form-actions {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+        }
+
+        @media (max-width: 600px) {
+          .journal-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .journal-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .journal-header-buttons {
+            display: flex;
+            gap: 8px;
+          }
+          .journal-header-buttons button {
+            flex: 1;
+            min-width: 0 !important;
+          }
+          .journal-entry-card,
+          .journal-admin-card {
+            padding: 14px 14px;
+          }
+          .journal-form-actions {
+            flex-direction: column-reverse;
+          }
+          .journal-form-actions button {
+            width: 100%;
+          }
+          .journal-streak {
+            align-self: flex-start;
+            margin-top: 2px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
