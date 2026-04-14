@@ -10,6 +10,13 @@ const Skeleton = ({ className = '' }: { className?: string }) => (
 
 const MOOD_EMOJI = ['', '😔', '😕', '😐', '🙂', '😊'];
 
+const JOURNAL_CATEGORIES = [
+  { slug: 'stopy',       label: '#stopy' },
+  { slug: 'twarz',       label: '#twarz' },
+  { slug: 'wlosy',       label: '#włosy' },
+  { slug: 'skora_ciala', label: '#skóra ciała' },
+] as const;
+
 interface Props {
   userId: string;
 }
@@ -39,7 +46,7 @@ export function DrawerJournalTab({ userId }: Props) {
   return (
     <div className="p-3 space-y-2">
       <Link
-        to={`/admin/uzytkownicy/${userId}?tab=dziennik`}
+        to={`/admin/uzytkownicy?userId=${userId}`}
         className="text-xs text-indigo-600 hover:underline block mb-2"
       >
         Otwórz pełny dziennik ↗
@@ -59,10 +66,15 @@ export function DrawerJournalTab({ userId }: Props) {
             <div className="text-gray-500 mt-0.5 line-clamp-2">{entry.notes}</div>
           )}
           {entry.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {entry.tags.map((t: string) => (
-                <span key={t} className="bg-gray-100 rounded px-1.5 py-0.5 text-[10px]">{t}</span>
-              ))}
+            <div className="flex flex-wrap gap-2 mt-1">
+              {entry.tags.map((t: string) => {
+                const cat = JOURNAL_CATEGORIES.find((c) => c.slug === t);
+                return (
+                  <span key={t} style={{ fontSize: 10, fontWeight: 700, color: '#B8913A' }}>
+                    {cat ? cat.label : `#${t}`}
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>
