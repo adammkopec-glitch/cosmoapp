@@ -3,8 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, X, Send, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { skinJournalApi, type SkinJournalEntry } from '@/api/skin-journal.api';
+import { SummaryModal } from '@/components/skin-journal/SummaryModal';
 
 const MOODS: string[] = ['😟', '😕', '😐', '🙂', '😊'];
+
+const JOURNAL_CATEGORIES = [
+  { slug: 'stopy',       label: '#stopy' },
+  { slug: 'twarz',       label: '#twarz' },
+  { slug: 'wlosy',       label: '#włosy' },
+  { slug: 'skora_ciala', label: '#skóra ciała' },
+] as const;
+
+type CategorySlug = typeof JOURNAL_CATEGORIES[number]['slug'];
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -84,10 +94,15 @@ function AdminEntryCard({ entry, userId }: { entry: SkinJournalEntry; userId: st
         </div>
         {entry.notes && <p style={{ color: '#4B4036', margin: '0 0 10px', fontSize: 13, lineHeight: 1.6 }}>{entry.notes}</p>}
         {entry.tags.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
-            {entry.tags.map((tag) => (
-              <span key={tag} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(26,18,8,0.07)', color: '#4B4036' }}>{tag}</span>
-            ))}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+            {entry.tags.map((tag) => {
+              const cat = JOURNAL_CATEGORIES.find((c) => c.slug === tag);
+              return (
+                <span key={tag} style={{ fontSize: 11, fontWeight: 700, color: '#4B4036' }}>
+                  {cat ? cat.label : `#${tag}`}
+                </span>
+              );
+            })}
           </div>
         )}
         <div style={{ display: 'flex', gap: 6 }}>
@@ -118,16 +133,21 @@ function AdminEntryCard({ entry, userId }: { entry: SkinJournalEntry; userId: st
       </div>
 
       {entry.photoPath && (
-        <img src={`/uploads/${entry.photoPath}`} alt="Zdjęcie" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />
+        <img src={entry.photoPath} alt="Zdjęcie" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />
       )}
 
       {entry.notes && <p style={{ color: '#4B4036', margin: '0 0 10px', fontSize: 13, lineHeight: 1.6 }}>{entry.notes}</p>}
 
       {entry.tags.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
-          {entry.tags.map((tag) => (
-            <span key={tag} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fdf6ec', color: '#B8913A', border: '1px solid #f0e0c0' }}>{tag}</span>
-          ))}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+          {entry.tags.map((tag) => {
+            const cat = JOURNAL_CATEGORIES.find((c) => c.slug === tag);
+            return (
+              <span key={tag} style={{ fontSize: 12, fontWeight: 700, color: '#B8913A' }}>
+                {cat ? cat.label : `#${tag}`}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -180,14 +200,14 @@ function AddNoteForm({ userId, onClose }: { userId: string; onClose: () => void 
   const qc = useQueryClient();
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
-  const [tagsRaw, setTagsRaw] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<CategorySlug[]>([]);
 
   const create = useMutation({
     mutationFn: () =>
       skinJournalApi.adminCreateEntry(userId, {
         date,
         notes: notes.trim() || undefined,
-        tags: tagsRaw.split(',').map((t) => t.trim()).filter(Boolean),
+        tags: selectedCategories,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-journal', userId] });
@@ -210,8 +230,35 @@ function AddNoteForm({ userId, onClose }: { userId: string; onClose: () => void 
       <label style={{ fontSize: 11, color: '#6B6560', display: 'block', marginBottom: 4 }}>Notatka</label>
       <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Wykonane zabiegi, zalecenia, obserwacje..." style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e0d8', borderRadius: 8, marginBottom: 10, fontSize: 13, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
 
-      <label style={{ fontSize: 11, color: '#6B6560', display: 'block', marginBottom: 4 }}>Tagi (oddzielone przecinkami)</label>
-      <input type="text" value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="np. peeling, nawilżenie" style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e0d8', borderRadius: 8, marginBottom: 14, fontSize: 13, boxSizing: 'border-box' }} />
+      <label style={{ fontSize: 11, color: '#6B6560', display: 'block', marginBottom: 6 }}>Kategoria</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+        {JOURNAL_CATEGORIES.map((cat) => {
+          const active = selectedCategories.includes(cat.slug);
+          return (
+            <button
+              key={cat.slug}
+              type="button"
+              onClick={() =>
+                setSelectedCategories((prev) =>
+                  active ? prev.filter((s) => s !== cat.slug) : [...prev, cat.slug]
+                )
+              }
+              style={{
+                padding: '6px 12px',
+                border: active ? '2px solid #1A1208' : '2px solid #e5e0d8',
+                borderRadius: 20,
+                background: active ? '#1A1208' : '#faf9f7',
+                color: active ? '#fff' : '#888',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
+      </div>
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #e5e0d8', borderRadius: 8, background: '#fff', color: '#666', cursor: 'pointer', fontSize: 13 }}>Anuluj</button>
@@ -233,6 +280,7 @@ interface UserJournalProps {
 export const UserJournal = ({ userId, userName }: UserJournalProps) => {
   const [page, setPage] = useState(1);
   const [showAddNote, setShowAddNote] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-journal', userId, page],
@@ -267,12 +315,20 @@ export const UserJournal = ({ userId, userName }: UserJournalProps) => {
           </div>
         </div>
         {!showAddNote && (
-          <button
-            onClick={() => setShowAddNote(true)}
-            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: '#1A1208', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
-          >
-            <Plus size={12} /> Dodaj notatkę
-          </button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => setShowSummary(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fdf6ec', color: '#B8913A', border: '1px solid #e8d5a0', borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Podsumowanie
+            </button>
+            <button
+              onClick={() => setShowAddNote(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#1A1208', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+            >
+              <Plus size={12} /> Dodaj notatkę
+            </button>
+          </div>
         )}
       </div>
 
@@ -300,6 +356,8 @@ export const UserJournal = ({ userId, userName }: UserJournalProps) => {
           </button>
         </div>
       )}
+
+      {showSummary && <SummaryModal userId={userId} onClose={() => setShowSummary(false)} />}
     </div>
   );
 };
