@@ -33,9 +33,9 @@ interface Props {
 
 export function HappyHourOverlay({ rangeStart, rangeEnd, children }: Props) {
   const { data: raw } = useQuery({
-    queryKey: ['happyHours'],
+    queryKey: ['happyHours', 'active'],
     queryFn: () =>
-      happyHoursApi.getAll().then((r: any) => r.data?.happyHours ?? r.happyHours ?? []),
+      happyHoursApi.getActive().then((r: any) => Array.isArray(r) ? r : r.happyHours ?? r.data ?? []),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -44,17 +44,16 @@ export function HappyHourOverlay({ rangeStart, rangeEnd, children }: Props) {
   for (const hh of raw ?? []) {
     if (!hh.isActive) continue;
 
-    const color = 'rgba(245,158,11,0.25)'; // amber tint
-
     if (hh.type === 'ONE_TIME' && hh.date) {
-      const dateStr = typeof hh.date === 'string' ? hh.date : format(new Date(hh.date), 'yyyy-MM-dd');
+      const dateStr = format(new Date(hh.date), 'yyyy-MM-dd');
       events.push({
         id: `hh-${hh.id}`,
         start: toISO(dateStr, hh.startTime),
         end: toISO(dateStr, hh.endTime),
-        display: 'background',
-        color,
-        extendedProps: { happyHourId: hh.id },
+        display: 'auto',
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
+        extendedProps: { happyHourId: hh.id, startTime: hh.startTime, endTime: hh.endTime, name: hh.name, discountType: hh.discountType, discountValue: hh.discountValue },
       });
     } else if (hh.type === 'RECURRING' && hh.dayOfWeek != null) {
       const dates = datesForDayOfWeek(hh.dayOfWeek, rangeStart, rangeEnd);
@@ -63,9 +62,10 @@ export function HappyHourOverlay({ rangeStart, rangeEnd, children }: Props) {
           id: `hh-${hh.id}-${date}`,
           start: toISO(date, hh.startTime),
           end: toISO(date, hh.endTime),
-          display: 'background',
-          color,
-          extendedProps: { happyHourId: hh.id },
+          display: 'auto',
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+          extendedProps: { happyHourId: hh.id, startTime: hh.startTime, endTime: hh.endTime, name: hh.name, discountType: hh.discountType, discountValue: hh.discountValue },
         });
       }
     }

@@ -1,5 +1,4 @@
 // apps/web/src/components/ui/spinner.tsx
-import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const containerSizes = { sm: 'h-4', md: 'h-5', lg: 'h-7' } as const;
