@@ -474,11 +474,11 @@ export const Home = () => {
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <p className="font-bold" style={{ color: '#B8913A' }}>od {Number(s.price).toFixed(0)} zł</p>
-                      <Link to={`/rezerwacja?serviceId=${s.id}`}>
-                        <Button size="sm" className="rounded-full text-xs font-semibold gap-1" style={{ backgroundColor: '#1A1208', color: '#fff' }}>
+                      <Button size="sm" className="rounded-full text-xs font-semibold gap-1" style={{ backgroundColor: '#1A1208', color: '#fff' }} asChild>
+                        <Link to={`/rezerwacja?serviceId=${s.id}`}>
                           Zarezerwuj <ArrowRight size={11} />
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -528,8 +528,8 @@ export const Home = () => {
                 >
                   {/* Rating bars */}
                   <div className="flex gap-1 mb-3">
-                    {[1,2,3,4,5].map((i) => (
-                      <span key={i} className="inline-block rounded-sm" style={{
+                    {[1,2,3,4,5].map((star) => (
+                      <span key={star} className="inline-block rounded-sm" style={{
                         width: 14, height: 2, background: '#C4A882'
                       }} />
                     ))}
