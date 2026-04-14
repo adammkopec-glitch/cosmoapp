@@ -82,7 +82,7 @@ export function DecoLine({ width = 24, className }: DecoLineProps) {
   return (
     <span
       aria-hidden="true"
-      className={cn('inline-block bg-caramel flex-shrink-0', className)}
+      className={cn('inline-block bg-caramel flex-shrink-0 pointer-events-none select-none', className)}
       style={{ width, height: 1 }}
     />
   );
