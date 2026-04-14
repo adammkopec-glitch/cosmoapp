@@ -114,3 +114,58 @@
   .delay-300 { transition-delay: 300ms; }
   .delay-400 { transition-delay: 400ms; }
 }
+
+/* ── Modern Glamour Refresh additions ── */
+
+/* Floating animation for GeoCircle / GeoArc.
+   These components use the CSS class "deco-float" (not inline style)
+   so that the prefers-reduced-motion media query works reliably. */
+@keyframes deco-float {
+  0%   { transform: translateY(0px); }
+  100% { transform: translateY(-6px); }
+}
+
+.deco-float {
+  animation: deco-float 6s ease-in-out infinite alternate;
+}
+
+/* Disable decorative animations for users who prefer reduced motion.
+   GeoCircle i GeoArc używają klasy CSS "deco-float" (nie inline style)
+   — dzięki temu ta reguła działa niezawodnie we wszystkich przeglądarkach. */
+@media (prefers-reduced-motion: reduce) {
+  .deco-float {
+    animation: none !important;
+  }
+}
+
+/* Caramel skeleton shimmer — replaces default muted pulse */
+@keyframes caramel-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-caramel {
+  background: linear-gradient(
+    90deg,
+    rgba(196,168,130,0.05) 25%,
+    rgba(196,168,130,0.15) 50%,
+    rgba(196,168,130,0.05) 75%
+  );
+  background-size: 800px 100%;
+  animation: caramel-shimmer 1.5s infinite linear;
+}
+
+/* Grain texture overlay — apply to hero sections */
+.grain-overlay {
+  position: relative;
+}
+.grain-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 0;
+}
