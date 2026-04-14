@@ -1,4 +1,5 @@
 import { EventContentArg } from '@fullcalendar/core';
+import { cn } from '@/lib/utils';
 
 // Color map matching existing status scheme in the app
 const STATUS_COLORS: Record<string, string> = {
@@ -31,7 +32,7 @@ interface AppointmentEventProps {
 // FullCalendar passes extendedProps on each event — we store our data there.
 // Height detection via event.el is unreliable during initial render in FC v6.
 // Render all fields; CSS overflow:hidden on the container clips them gracefully.
-export function AppointmentCard({ timeText, event }: EventContentArg) {
+export function AppointmentCard({ event }: EventContentArg) {
   const props = event.extendedProps as AppointmentEventProps;
 
   const priceLabel = props.discountPercent
@@ -40,11 +41,18 @@ export function AppointmentCard({ timeText, event }: EventContentArg) {
 
   const bgColor = STATUS_COLORS[props.status] ?? 'bg-gray-500';
 
+  const fmt = (d: Date) => d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  const timeRange = event.start && event.end
+    ? `${fmt(event.start)} – ${fmt(event.end)}`
+    : event.start ? fmt(event.start) : '';
+
+  const isUpcoming = props.status === 'CONFIRMED' || props.status === 'PENDING';
+
   return (
-    <div className={`${bgColor} text-white rounded px-1.5 py-1 text-[11px] leading-snug h-full overflow-hidden`}>
+    <div className={cn(`${bgColor} text-white rounded px-1.5 py-1 text-[11px] leading-snug h-full overflow-hidden`, isUpcoming && 'border-l-[3px] border-l-caramel')}>
       <div className="font-semibold truncate">{props.clientName}</div>
       <div className="truncate opacity-90">{props.serviceName}</div>
-      <div className="opacity-80">{timeText}</div>
+      <div className="opacity-80">{timeRange}</div>
 
       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
         <span className="opacity-80">{priceLabel}</span>

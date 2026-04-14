@@ -7,9 +7,12 @@ import { Plus, X, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { appointmentsApi } from '@/api/appointments.api';
 import { employeesApi } from '@/api/employees.api';
+import { reviewsApi } from '@/api/reviews.api';
 import { useSocket } from '@/hooks/useSocket';
 import { Button } from '@/components/ui/button';
 import { AppointmentListSkeleton } from '@/components/skeletons';
+import { FollowUpReminderWidget } from '@/components/appointments/FollowUpReminderWidget';
+import { ReviewForm } from '@/components/reviews/ReviewForm';
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Oczekująca',
@@ -18,11 +21,11 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETED: 'Zakończona',
 };
 
-const STATUS_STYLES: Record<string, { background: string; color: string }> = {
-  PENDING:   { background: 'rgba(184,145,58,0.12)',  color: '#92400E' },
-  CONFIRMED: { background: 'rgba(34,197,94,0.12)',   color: '#15803D' },
-  CANCELLED: { background: 'rgba(239,68,68,0.12)',   color: '#DC2626' },
-  COMPLETED: { background: 'rgba(184,145,58,0.1)',   color: '#B8913A' },
+const STATUS_STYLES: Record<string, { background: string; color: string; borderLeft: string }> = {
+  PENDING:   { background: 'rgba(184,145,58,0.12)',  color: '#92400E', borderLeft: '3px solid #92400E' },
+  CONFIRMED: { background: 'rgba(34,197,94,0.12)',   color: '#15803D', borderLeft: '3px solid #15803D' },
+  CANCELLED: { background: 'rgba(239,68,68,0.12)',   color: '#DC2626', borderLeft: '3px solid #DC2626' },
+  COMPLETED: { background: 'rgba(184,145,58,0.1)',   color: '#B8913A', borderLeft: '3px solid #B8913A' },
 };
 
 function calcDiscountedPrice(price: number, reward: any): number {
@@ -42,6 +45,11 @@ export const UserAppointments = () => {
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ['appointments', 'me'],
     queryFn: appointmentsApi.getMy,
+  });
+
+  const { data: pendingReviews = [] } = useQuery({
+    queryKey: ['reviews-pending'],
+    queryFn: reviewsApi.getPending,
   });
 
   useEffect(() => {
@@ -81,6 +89,8 @@ export const UserAppointments = () => {
         </Link>
       </div>
 
+      <FollowUpReminderWidget />
+
       {appointments.length === 0 && (
         <div
           className="rounded-[24px] p-10 text-center space-y-5"
@@ -93,6 +103,12 @@ export const UserAppointments = () => {
             <CalendarDays size={36} style={{ color: '#B8913A' }} />
           </div>
           <div>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true" className="mx-auto mb-3 opacity-40">
+              <rect x="8" y="12" width="32" height="28" rx="3" stroke="#C4A882" strokeWidth="1.5"/>
+              <path d="M8 20h32" stroke="#C4A882" strokeWidth="1.5"/>
+              <path d="M16 8v8M32 8v8" stroke="#C4A882" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M17 30h4M27 30h4M17 36h4" stroke="#C4A882" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
             <h3 className="font-heading font-bold text-xl mb-2" style={{ color: '#1A1208' }}>
               Twoja historia zaczyna się teraz
             </h3>
@@ -115,7 +131,7 @@ export const UserAppointments = () => {
           <h2 className="text-lg font-semibold" style={{ color: '#1A1208' }}>Nadchodzące wizyty</h2>
           <div className="grid gap-4">
             {upcoming.map((a: any) => (
-              <AppointmentCard key={a.id} appointment={a} />
+              <AppointmentCard key={a.id} appointment={a} hasPendingReview={pendingReviews.some((p) => p.id === a.id)} />
             ))}
           </div>
         </section>
@@ -126,7 +142,7 @@ export const UserAppointments = () => {
           <h2 className="text-lg font-semibold" style={{ color: 'rgba(26,18,8,0.5)' }}>Historia</h2>
           <div className="grid gap-4 opacity-75">
             {past.map((a: any) => (
-              <AppointmentCard key={a.id} appointment={a} />
+              <AppointmentCard key={a.id} appointment={a} hasPendingReview={pendingReviews.some((p) => p.id === a.id)} />
             ))}
           </div>
         </section>
@@ -135,8 +151,9 @@ export const UserAppointments = () => {
   );
 };
 
-function AppointmentCard({ appointment: a }: { appointment: any }) {
+function AppointmentCard({ appointment: a, hasPendingReview }: { appointment: any; hasPendingReview: boolean }) {
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const canReschedule = a.status === 'PENDING' || a.status === 'CONFIRMED';
   const statusStyle = STATUS_STYLES[a.status] ?? { background: 'rgba(0,0,0,0.06)', color: 'rgba(26,18,8,0.6)' };
 
@@ -149,7 +166,10 @@ function AppointmentCard({ appointment: a }: { appointment: any }) {
         {/* Header */}
         <div className="p-5 flex flex-row justify-between items-start gap-4">
           <div className="space-y-1">
-            <h3 className="text-lg font-heading font-semibold" style={{ color: '#1A1208' }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#B8913A' }}>
+              {canReschedule ? 'Nadchodząca wizyta' : 'Przeszła wizyta'}
+            </p>
+            <h3 className="text-[15px] font-heading font-bold" style={{ color: '#1A1208' }}>
               {a.service?.name}
             </h3>
             {a.service?.price && (() => {
@@ -203,7 +223,7 @@ function AppointmentCard({ appointment: a }: { appointment: any }) {
             </span>
             {canReschedule && (
               <button
-                className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+                className="text-sm px-4 py-2.5 rounded-xl border transition-colors hover:opacity-80"
                 style={{ borderColor: 'rgba(0,0,0,0.15)', color: '#1A1208' }}
                 onClick={() => setRescheduleOpen(true)}
                 disabled={a.rescheduleStatus === 'PENDING'}
@@ -213,6 +233,42 @@ function AppointmentCard({ appointment: a }: { appointment: any }) {
             )}
           </div>
         </div>
+
+        {/* Post-visit CTA */}
+        {a.status === 'COMPLETED' && (
+          <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            {reviewOpen ? (
+              <div className="p-4">
+                <ReviewForm
+                  appointmentId={a.id}
+                  serviceName={a.service?.name ?? 'Wizyta'}
+                  employeeName={a.employee?.name}
+                  date={a.date}
+                  onDone={() => setReviewOpen(false)}
+                />
+              </div>
+            ) : (
+              <div className="px-5 pb-4 pt-3 flex gap-2">
+                {hasPendingReview && (
+                  <button
+                    onClick={() => setReviewOpen(true)}
+                    className="flex-1 text-center py-2.5 rounded-full text-[13px] font-semibold border transition-opacity hover:opacity-80"
+                    style={{ borderColor: '#B8913A', color: '#B8913A' }}
+                  >
+                    ★ Oceń wizytę
+                  </button>
+                )}
+                <Link
+                  to="/rezerwacja"
+                  className="flex-1 text-center py-2.5 rounded-full text-[13px] font-semibold transition-opacity hover:opacity-80"
+                  style={{ background: '#1A1208', color: '#fff' }}
+                >
+                  Rezerwuj znowu
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Details */}
         {(a.rescheduleStatus === 'PENDING' || a.notes || a.allergies || a.problemDescription || a.staffNote || a.photoPath) && (
