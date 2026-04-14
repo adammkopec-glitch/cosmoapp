@@ -57,7 +57,7 @@ export const Navbar = () => {
           {/* Logo */}
           <Link
             to="/"
-            className="font-display text-[13px] tracking-[0.45em] uppercase"
+            className="font-display text-[13px] uppercase"
             style={{ color: scrolled ? '#1C1510' : '#FAF7F2', fontStyle: 'normal', fontWeight: 300, letterSpacing: '0.08em' }}
           >
             Cosmo
@@ -110,16 +110,9 @@ export const Navbar = () => {
                 >
                   Zaloguj
                 </Link>
-                <Link
-                  to="/rezerwacja"
-                  className="px-6 py-2.5 text-[10px] tracking-[0.25em] uppercase font-medium transition-opacity hover:opacity-90"
-                  style={{
-                    background: scrolled ? '#1C1510' : '#FAF7F2',
-                    color: scrolled ? '#FAF7F2' : '#1C1510',
-                  }}
-                >
-                  Rezerwacja
-                </Link>
+                <Button variant="ghost-underline" size="sm" asChild>
+                  <Link to="/rezerwacja">Rezerwacja</Link>
+                </Button>
               </>
             )}
           </div>

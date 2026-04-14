@@ -301,7 +301,7 @@ export const BlogList = () => {
                   )}
 
                   {/* Content */}
-                  <div className="flex flex-col flex-1 px-5 py-4 min-w-0">
+                  <div className="relative z-[1] flex flex-col flex-1 px-5 py-4 min-w-0">
                     <h2
                       className="text-lg font-heading font-bold leading-snug mb-1 line-clamp-2"
                       style={{ color: '#1A1208' }}
