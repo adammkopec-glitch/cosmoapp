@@ -7,6 +7,7 @@ import { api } from '@/lib/axios';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTour } from '@/hooks/useTour';
+import { DecoLine } from '@/components/shared/DecoElements';
 
 export const UserProfile = () => {
   const { user } = useAuth();
@@ -103,7 +104,12 @@ export const UserProfile = () => {
         className="px-6 py-5"
         style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
       >
-        <h2 className="font-heading font-bold text-lg" style={{ color: '#1A1208' }}>{title}</h2>
+        <div className="flex items-center gap-3 mb-4">
+          <DecoLine />
+          <span className="text-[10px] font-semibold tracking-[0.35em] uppercase text-caramel">
+            {title}
+          </span>
+        </div>
         {subtitle && (
           <p className="text-xs mt-1" style={{ color: 'rgba(26,18,8,0.5)' }}>{subtitle}</p>
         )}
@@ -126,11 +132,11 @@ export const UserProfile = () => {
             <img
               src={user.avatarPath}
               alt={user.name}
-              className="w-24 h-24 rounded-full object-cover"
+              className="w-24 h-24 rounded-full object-cover ring-2 ring-caramel/40 shadow-[0_0_20px_rgba(196,168,130,0.2)]"
             />
           ) : (
             <div
-              className="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold"
+              className="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold ring-2 ring-caramel/40 shadow-[0_0_20px_rgba(196,168,130,0.2)]"
               style={{ background: 'rgba(184,145,58,0.1)', color: '#B8913A' }}
             >
               {user?.name?.charAt(0).toUpperCase()}
@@ -205,8 +211,8 @@ export const UserProfile = () => {
             <div key={label} className="space-y-1.5">
               <label className="text-sm font-medium" style={{ color: '#1A1208' }}>{label}</label>
               <textarea
-                className="w-full rounded-xl px-3 py-2 text-sm resize-none outline-none transition-colors"
-                style={{ border: '1px solid rgba(0,0,0,0.1)', background: '#FDFAF6' }}
+                className="w-full rounded-xl px-3 py-3 text-sm resize-none outline-none transition-colors"
+                style={{ border: '1px solid rgba(0,0,0,0.1)', background: '#FDFAF6', minHeight: '48px' }}
                 rows={2}
                 placeholder={placeholder}
                 value={value}
@@ -216,22 +222,11 @@ export const UserProfile = () => {
               />
             </div>
           ))}
-          {profile?.cardStaffNotes && (
-            <div className="space-y-1.5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-              <p className="text-sm font-medium" style={{ color: 'rgba(26,18,8,0.5)' }}>Notatki gabinetu</p>
-              <p
-                className="text-sm rounded-xl px-3 py-2 whitespace-pre-wrap"
-                style={{ background: 'rgba(245,240,235,0.6)', color: '#1A1208' }}
-              >
-                {profile.cardStaffNotes}
-              </p>
-            </div>
-          )}
-          <div className="pt-1">
+<div className="pt-1">
             <button
               onClick={() => saveCard()}
               disabled={savingCard}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-60"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-60"
               style={{ background: '#1A1208', color: '#fff' }}
             >
               {savingCard && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -278,7 +273,7 @@ export const UserProfile = () => {
             <button
               onClick={() => saveConsents({ marketingConsent, photoConsent })}
               disabled={savingConsents}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-60"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-60"
               style={{ background: '#1A1208', color: '#fff' }}
             >
               {savingConsents && <Loader2 className="w-4 h-4 animate-spin" />}
