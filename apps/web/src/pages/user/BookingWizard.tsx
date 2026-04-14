@@ -23,11 +23,13 @@ import { servicesApi } from '@/api/services.api';
 import { employeesApi } from '@/api/employees.api';
 import { appointmentsApi } from '@/api/appointments.api';
 import { loyaltyApi } from '@/api/loyalty.api';
+import happyHoursApi from '@/api/happy-hours.api';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import type { ValidatedVoucher } from '@cosmo/shared';
 import { Button } from '@/components/ui/button';
 import { ServiceRating } from '@/components/reviews/ServiceRating';
+import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +47,7 @@ interface WizardState {
   otherRewardId: string | null;
   discountCodeId: string | null;
   voucherData: ValidatedVoucher | null;
+  appliedHappyHour: any | null;
 }
 
 const STEPS = ['Usługa', 'Pracownik', 'Termin', 'Uwagi', 'Potwierdzenie'];
@@ -417,20 +420,52 @@ function StepEmployee({
 
 // ─── Step 3: Wybór terminu ────────────────────────────────────────────────────
 
+function getHappyHourForSlot(
+  time: string,
+  date: Date,
+  serviceId: string,
+  employeeId: string | null,
+  activeHappyHours: any[],
+): any | null {
+  return (
+    activeHappyHours.find((hh) => {
+      if (!hh.isActive) return false;
+      const dateMatch =
+        hh.type === 'ONE_TIME'
+          ? isSameDay(new Date(hh.date), date)
+          : hh.dayOfWeek === date.getDay();
+      if (!dateMatch) return false;
+      if (time < hh.startTime || time >= hh.endTime) return false;
+      if (!hh.isAllServices && !hh.services.some((s: any) => s.id === serviceId)) return false;
+      if (
+        !hh.isAllEmployees &&
+        employeeId &&
+        !hh.employees.some((e: any) => e.id === employeeId)
+      )
+        return false;
+      return true;
+    }) ?? null
+  );
+}
+
 function StepDate({
   selectedDate,
   selectedTime,
   onSelectDate,
   onSelectTime,
+  onSelectHappyHour,
   service,
   employeeId,
+  activeHappyHours,
 }: {
   selectedDate: Date | null;
   selectedTime: string | null;
   onSelectDate: (d: Date) => void;
   onSelectTime: (t: string) => void;
+  onSelectHappyHour: (hh: any | null) => void;
   service: any;
   employeeId: string | null;
+  activeHappyHours: any[];
 }) {
   const dateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
 
@@ -439,6 +474,14 @@ function StepDate({
     queryFn: () => employeesApi.getAvailability(dateStr!, service.id, employeeId),
     enabled: !!dateStr && !!service?.id,
   });
+
+  const handleSlotClick = (time: string) => {
+    onSelectTime(time);
+    if (selectedDate && service?.id) {
+      const hh = getHappyHourForSlot(time, selectedDate, service.id, employeeId, activeHappyHours);
+      onSelectHappyHour(hh);
+    }
+  };
 
   return (
     <div className="grid md:grid-cols-2 gap-8">
@@ -482,23 +525,47 @@ function StepDate({
               Dostępne godziny — {format(selectedDate, 'EEEE, d MMMM', { locale: pl })}
             </p>
             <div className="grid grid-cols-3 gap-2">
-              {slots.map((slot) => (
-                <button
-                  key={slot.time}
-                  disabled={!slot.available}
-                  onClick={() => slot.available && onSelectTime(slot.time)}
-                  className="py-2 rounded-lg text-sm font-medium border transition-all"
-                  style={
-                    !slot.available
-                      ? { background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)', color: '#DC2626', cursor: 'not-allowed' }
-                      : selectedTime === slot.time
-                      ? { background: '#1A1208', color: '#fff', borderColor: '#1A1208' }
-                      : { borderColor: 'rgba(0,0,0,0.15)', color: '#1A1208' }
-                  }
-                >
-                  {slot.time}
-                </button>
-              ))}
+              {slots.map((slot) => {
+                const happyHour =
+                  slot.available && selectedDate && service?.id
+                    ? getHappyHourForSlot(slot.time, selectedDate, service.id, employeeId, activeHappyHours)
+                    : null;
+                const isHot = !!happyHour;
+                return (
+                  <button
+                    key={slot.time}
+                    disabled={!slot.available}
+                    onClick={() => slot.available && handleSlotClick(slot.time)}
+                    className="py-2 rounded-lg text-sm font-medium border transition-all"
+                    style={
+                      !slot.available
+                        ? { background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)', color: '#DC2626', cursor: 'not-allowed' }
+                        : selectedTime === slot.time
+                        ? { background: '#1A1208', color: '#fff', borderColor: '#1A1208' }
+                        : isHot
+                        ? { background: 'rgba(217,119,6,0.08)', borderColor: '#D97706', color: '#92400E' }
+                        : { borderColor: 'rgba(0,0,0,0.15)', color: '#1A1208' }
+                    }
+                  >
+                    {isHot ? (
+                      <span className="flex flex-col items-center gap-0.5 leading-tight">
+                        <span className="text-[10px] font-bold tracking-wide" style={{ color: '#D97706' }}>⭐ HOT</span>
+                        <span>{slot.time}</span>
+                        <span className="text-[10px]" style={{ color: 'rgba(146,64,14,0.7)', textDecoration: 'line-through' }}>
+                          {Number(service?.price).toFixed(2)} zł
+                        </span>
+                        <span className="text-[10px] font-bold" style={{ color: '#D97706' }}>
+                          {happyHour.discountType === 'PERCENTAGE'
+                            ? `${Number(service?.price) * (1 - Number(happyHour.discountValue) / 100) < 0 ? '0.00' : (Number(service?.price) * (1 - Number(happyHour.discountValue) / 100)).toFixed(2)} zł`
+                            : `${Math.max(0, Number(service?.price) - Number(happyHour.discountValue)).toFixed(2)} zł`}
+                        </span>
+                      </span>
+                    ) : (
+                      slot.time
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -676,8 +743,11 @@ function StepConfirm({
   }
 
   let discountedPrice = basePrice;
+  if (state.appliedHappyHour) {
+    discountedPrice = calcDiscountedPrice(basePrice, state.appliedHappyHour);
+  }
   if (state.voucherData) {
-    discountedPrice = calcDiscountedPrice(basePrice, state.voucherData);
+    discountedPrice = calcDiscountedPrice(discountedPrice, state.voucherData);
   }
 
   const hasDiscount = discountedPrice < basePrice;
@@ -708,6 +778,22 @@ function StepConfirm({
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {/* Happy Hours banner */}
+      {state.appliedHappyHour && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{ background: '#fffbeb', border: '1px solid #d97706' }}
+        >
+          <p className="font-semibold text-sm" style={{ color: '#92400E' }}>
+            ⭐ HAPPY HOURS — {state.appliedHappyHour.discountValue}
+            {state.appliedHappyHour.discountType === 'PERCENTAGE' ? '%' : ' zł'} RABATU
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: '#B45309' }}>
+            Wybrany termin jest objęty promocją!
+          </p>
+        </div>
+      )}
+
       {/* Summary card */}
       <div
         className="rounded-[20px] overflow-hidden"
@@ -894,6 +980,20 @@ export const BookingWizard = () => {
   const preselectedSeriesId = searchParams.get('seriesId');
 
   const [step, setStep] = useState(1);
+  const [floatingVisible, setFloatingVisible] = useState(false);
+  const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setFloatingVisible(!entry.isIntersecting),
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const [state, setState] = useState<WizardState>({
     service: null,
     seriesId: preselectedSeriesId,
@@ -908,6 +1008,12 @@ export const BookingWizard = () => {
     otherRewardId: null,
     discountCodeId: null,
     voucherData: null,
+    appliedHappyHour: null,
+  });
+
+  const { data: activeHappyHours = [] } = useQuery<any[]>({
+    queryKey: ['happy-hours', 'active'],
+    queryFn: happyHoursApi.getActive,
   });
 
   const update = useCallback((field: string, value: any) => {
@@ -925,7 +1031,7 @@ export const BookingWizard = () => {
   };
 
   const selectDate = (date: Date) => {
-    setState((prev) => ({ ...prev, date, time: null }));
+    setState((prev) => ({ ...prev, date, time: null, appliedHappyHour: null }));
   };
 
   const { mutateAsync: createAppointment, isPending } = useMutation<any, Error, any>({
@@ -969,6 +1075,7 @@ export const BookingWizard = () => {
         problemDescription: state.problemDescription || undefined,
         couponId: finalCouponId || undefined,
         discountCodeId: state.discountCodeId || undefined,
+        happyHourId: state.appliedHappyHour?.id ?? undefined,
       });
 
       if (state.photo) {
@@ -999,42 +1106,13 @@ export const BookingWizard = () => {
         <p className="mt-1" style={{ color: 'rgba(26,18,8,0.5)' }}>Wypełnij formularz krok po kroku</p>
       </div>
 
-      {/* Editorial step progress bar */}
-      <div className="flex items-center gap-0 mb-8">
-        {STEPS.map((stepLabel, i) => {
-          const stepNum = i + 1;
-          const isActive = stepNum === step;
-          const isDone = stepNum < step;
-          return (
-            <React.Fragment key={stepNum}>
-              <div className="flex items-center gap-2 shrink-0">
-                <div
-                  className="w-6 h-6 flex items-center justify-center text-[10px] font-medium transition-colors"
-                  style={{
-                    background: isActive || isDone ? '#1C1510' : 'transparent',
-                    color: isActive || isDone ? '#FAF7F2' : '#6B5A4E',
-                    border: isActive || isDone ? 'none' : '1px solid #C4A882',
-                    borderRadius: '50%',
-                  }}
-                >
-                  {isDone ? '✓' : stepNum}
-                </div>
-                <span
-                  className="text-[10px] tracking-[0.2em] uppercase hidden sm:block"
-                  style={{ color: isActive ? '#1C1510' : '#6B5A4E' }}
-                >
-                  {stepLabel}
-                </span>
-              </div>
-              {i < STEPS.length - 1 && (
-                <div
-                  className="flex-1 h-px mx-3 transition-colors"
-                  style={{ background: stepNum < step ? '#C4A882' : '#E0D8CC' }}
-                />
-              )}
-            </React.Fragment>
-          );
-        })}
+      {/* Step progress dots */}
+      <div className="flex items-center justify-center gap-2 mb-6">
+        {Array.from({ length: STEPS.length }).map((_, idx) => (
+          <span key={idx} className={cn('rounded-full transition-all duration-300',
+            idx === step - 1 ? 'w-4 h-2 bg-caramel' : idx < step - 1 ? 'w-2 h-2 bg-caramel/60' : 'w-2 h-2 bg-caramel/25'
+          )} />
+        ))}
       </div>
 
       {/* Step content */}
@@ -1060,8 +1138,10 @@ export const BookingWizard = () => {
             selectedTime={state.time}
             onSelectDate={selectDate}
             onSelectTime={(t) => update('time', t)}
+            onSelectHappyHour={(hh) => update('appliedHappyHour', hh)}
             service={state.service}
             employeeId={state.employeeId}
+            activeHappyHours={activeHappyHours}
           />
         )}
         {step === 4 && (
@@ -1091,6 +1171,7 @@ export const BookingWizard = () => {
 
       {/* Navigation buttons */}
       <div
+        ref={navRef}
         className="flex justify-between pt-6"
         style={{ borderTop: '1px solid rgba(0,0,0,0.07)' }}
       >
@@ -1105,7 +1186,7 @@ export const BookingWizard = () => {
           <button
             onClick={() => setStep((s) => s + 1)}
             disabled={!canProceed()}
-            className="px-8 py-3 bg-espresso text-ivory text-[10px] tracking-[0.25em] uppercase hover:bg-espresso/90 transition-colors disabled:opacity-40"
+            className="px-8 py-3 bg-espresso text-ivory text-[10px] tracking-[0.25em] uppercase hover:bg-espresso/90 transition-colors disabled:opacity-40 w-full sm:w-auto min-h-[52px]"
           >
             Dalej
           </button>
@@ -1113,11 +1194,40 @@ export const BookingWizard = () => {
           <button
             onClick={handleConfirm}
             disabled={isPending || !canProceed()}
-            className="px-8 py-3 bg-espresso text-ivory text-[10px] tracking-[0.25em] uppercase hover:bg-espresso/90 transition-colors disabled:opacity-40"
+            className="px-8 py-3 bg-espresso text-ivory text-[10px] tracking-[0.25em] uppercase hover:bg-espresso/90 transition-colors disabled:opacity-40 w-full sm:w-auto min-h-[52px]"
           >
             {isPending ? 'Rezerwowanie...' : 'Potwierdź rezerwację'}
           </button>
         )}
+      </div>
+
+      {/* Floating "Dalej" button — mobile only, hides when static nav is visible */}
+      <div
+        className="fixed bottom-20 inset-x-0 flex justify-center md:hidden z-50 pointer-events-none"
+      >
+        <div
+          className="pointer-events-auto transition-transform duration-300 ease-in-out"
+          style={{ transform: floatingVisible && canProceed() ? 'translateY(0)' : 'translateY(200px)' }}
+        >
+          {step < STEPS.length ? (
+            <button
+              onClick={() => setStep((s) => s + 1)}
+              className="px-10 py-3.5 bg-espresso text-ivory text-[10px] tracking-[0.25em] uppercase shadow-lg"
+              style={{ borderRadius: 2 }}
+            >
+              Dalej →
+            </button>
+          ) : (
+            <button
+              onClick={handleConfirm}
+              disabled={isPending}
+              className="px-10 py-3.5 bg-espresso text-ivory text-[10px] tracking-[0.25em] uppercase shadow-lg disabled:opacity-40"
+              style={{ borderRadius: 2 }}
+            >
+              {isPending ? 'Rezerwowanie...' : 'Potwierdź →'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
