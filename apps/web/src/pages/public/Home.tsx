@@ -1,13 +1,17 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ArrowRight } from 'lucide-react';
 import { PageSEO } from '@/components/shared/SEO';
+import { GeoCircle, GeoArc, SectionNumber, DecoLine } from '@/components/shared/DecoElements';
 import { ConsultationModal } from '@/components/public/ConsultationModal';
 import { HeroSlider } from '@/components/public/HeroSlider';
 import { employeesApi } from '@/api/employees.api';
 import { useAuth } from '@/hooks/useAuth';
+import { Season, type Service } from '@cosmo/shared';
+import { servicesApi } from '@/api/services.api';
 
 const faqSchema = {
   '@context': 'https://schema.org',
@@ -85,11 +89,33 @@ const testimonials = [
   },
 ];
 
+function getCurrentSeason(): Season {
+  const month = new Date().getMonth(); // 0-indexed
+  if (month >= 2 && month <= 4) return Season.SPRING;
+  if (month >= 5 && month <= 7) return Season.SUMMER;
+  if (month >= 8 && month <= 10) return Season.AUTUMN;
+  return Season.WINTER;
+}
+
+const SEASON_LABELS: Record<Season, string> = {
+  [Season.SPRING]: 'Wiosna',
+  [Season.SUMMER]: 'Lato',
+  [Season.AUTUMN]: 'Jesień',
+  [Season.WINTER]: 'Zima',
+};
+
 const formatNextSlot = (date: string, time: string) => {
   const d = new Date(`${date}T${time}`);
   const day = d.toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' });
   return { day, time };
 };
+
+function getSlotsUrgency(count: number | undefined): { text: string; color: string } | null {
+  if (count === undefined || count === 0) return null;
+  if (count <= 2) return { text: `🔴 Ostatnie ${count} miejsce w tym tygodniu!`, color: '#DC2626' };
+  if (count <= 5) return { text: `⚡ Zostało tylko ${count} wolnych terminów!`, color: '#B8913A' };
+  return { text: `Wolnych terminów w tym tygodniu: ${count}`, color: 'rgba(26,18,8,0.5)' };
+}
 
 export const Home = () => {
   const [consultationOpen, setConsultationOpen] = useState(false);
@@ -101,11 +127,38 @@ export const Home = () => {
     staleTime: 10 * 60_000,
   });
 
+  const { data: weekSlots } = useQuery({
+    queryKey: ['week-slots-count'],
+    queryFn: employeesApi.getWeekSlotsCount,
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: allServices = [] } = useQuery<Service[]>({
+    queryKey: ['services'],
+    queryFn: servicesApi.getAll,
+    staleTime: 10 * 60_000,
+    enabled: isAuthenticated,
+  });
+
+  const currentSeason = getCurrentSeason();
+  const seasonalServices = allServices
+    .filter((s) => s.isActive && s.seasons.includes(currentSeason))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
+    .slice(0, 3);
+
   const formattedSlot = nextSlot ? formatNextSlot(nextSlot.date, nextSlot.time) : null;
 
   return (
     <div className="flex flex-col min-h-screen">
       <style>{`
+        .testimonial-col:not(:last-child) {
+          @media (max-width: 767px) {
+            border-right: none !important;
+            border-bottom: 1px solid rgba(196,168,130,0.25);
+            padding: 0 0 40px 0 !important;
+            margin-bottom: 40px;
+          }
+        }
         @keyframes ticker {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
@@ -126,17 +179,31 @@ export const Home = () => {
         <HeroSlider />
 
         {/* ── 1. HERO ── */}
-        <section className="py-16 md:py-24" style={{ backgroundColor: '#F5F0EB' }}>
+        <section className="py-16 md:py-24 grain-overlay" style={{ backgroundColor: '#F5F0EB' }}>
           <div className="container max-w-6xl mx-auto px-6">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="grid md:grid-cols-2 gap-12 items-center relative">
+
+              {/* Dekoracje tła */}
+              <GeoCircle size={280} opacity={0.16} className="top-[-40px] right-[-40px]" />
+              <GeoArc   size={110} opacity={0.22} className="top-[20px] right-[20px]" />
+              <SectionNumber n={1} opacity={0.07} className="top-[-10px] right-[24px]" />
+
+              {/* Floating badge */}
+              <div
+                className="hidden md:flex absolute top-8 right-6 z-10 w-[72px] h-[72px] rounded-full flex-col items-center justify-center text-center leading-snug"
+                style={{ border: '1px solid rgba(196,168,130,0.4)', fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#C4A882', background: 'rgba(245,240,235,0.9)' }}
+                aria-hidden="true"
+              >
+                Salon<br />od 2018
+              </div>
 
               {/* Left column */}
-              <div>
-                <div
-                  className="inline-block text-xs font-semibold tracking-widest uppercase mb-6 px-4 py-2 rounded-full"
-                  style={{ border: '1px solid #B8913A', color: '#B8913A' }}
-                >
-                  Profesjonalny salon kosmetologiczny
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <DecoLine />
+                  <span className="text-[10px] font-semibold tracking-[0.35em] uppercase text-caramel">
+                    Profesjonalny salon kosmetologiczny
+                  </span>
                 </div>
 
                 <h1 className="font-heading text-5xl md:text-6xl font-bold leading-tight mb-6" style={{ color: '#1A1208' }}>
@@ -149,26 +216,18 @@ export const Home = () => {
                   i podologiczne w przyjaznej atmosferze. Dbamy o Twój komfort i efekty.
                 </p>
 
-                <div className="flex flex-wrap gap-4 mb-6">
-                  <Link to="/rezerwacja">
-                    <Button
-                      size="lg"
-                      className="rounded-full px-8 py-6 text-base font-semibold shadow-lg hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: '#1A1208', color: '#fff' }}
-                    >
-                      Zarezerwuj wizytę →
-                    </Button>
-                  </Link>
-                  <Link to="/uslugi">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="rounded-full px-8 py-6 text-base font-semibold hover:bg-transparent"
-                      style={{ borderColor: '#1A1208', color: '#1A1208' }}
-                    >
-                      Zobacz usługi
-                    </Button>
-                  </Link>
+                <div className="flex flex-wrap gap-4 items-center mb-6">
+                  <Button size="lg" className="rounded-full gap-2" asChild>
+                    <Link to={isAuthenticated ? '/rezerwacja' : '/auth/login'}>
+                      Umów wizytę
+                      <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center">
+                        <ArrowRight size={12} />
+                      </span>
+                    </Link>
+                  </Button>
+                  <Button variant="ghost-underline" size="lg" asChild>
+                    <Link to="/uslugi">Nasze usługi</Link>
+                  </Button>
                 </div>
 
                 <p className="text-sm" style={{ color: 'rgba(26,18,8,0.5)' }}>
@@ -229,6 +288,14 @@ export const Home = () => {
                         <p className="text-sm font-semibold" style={{ color: '#B8913A' }}>
                           {formattedSlot?.time}
                         </p>
+                        {(() => {
+                          const urgency = getSlotsUrgency(weekSlots?.count);
+                          return urgency ? (
+                            <p className="text-xs font-semibold mt-1" style={{ color: urgency.color }}>
+                              {urgency.text}
+                            </p>
+                          ) : null;
+                        })()}
                         <Link to={isAuthenticated ? '/rezerwacja' : '/auth/register'}>
                           <Button
                             size="sm"
@@ -267,10 +334,10 @@ export const Home = () => {
             {[...tickerItems, ...tickerItems].map((item, i) => (
               <span
                 key={i}
-                className="text-sm font-semibold uppercase mx-8"
-                style={{ color: 'rgba(250,247,242,0.5)', letterSpacing: '0.25em' }}
+                className="text-[11px] font-medium uppercase tracking-[0.2em] mx-6 text-caramel"
               >
-                {item} <span style={{ color: '#C4A882', margin: '0 8px' }}>✦</span>
+                {item}
+                <span className="ml-6 opacity-40">·</span>
               </span>
             ))}
           </div>
@@ -378,26 +445,160 @@ export const Home = () => {
           </div>
         </section>
 
-        {/* ── TESTIMONIALS (editorial) ── */}
-        <section style={{ background: '#F0EBE3', padding: '80px 0' }}>
-          <div className="container text-center">
-            <p className="eyebrow mb-8">Co mówią klientki</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-4xl mx-auto">
-              {testimonials.map((t, i) => (
-                <div key={i} className="flex flex-col items-center">
-                  <p
-                    className="font-display text-[20px] text-espresso mb-6 leading-relaxed"
-                    style={{ fontStyle: 'italic', fontWeight: 300 }}
-                  >
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                  <div className="w-8 h-px bg-caramel mb-4" />
-                  <p className="eyebrow" style={{ color: '#6B5A4E' }}>
-                    {t.author} · {t.label}
-                  </p>
+        {/* ── SEASONAL RECOMMENDATIONS (logged-in only) ── */}
+        {isAuthenticated && seasonalServices.length > 0 && (
+          <section className="py-16" style={{ backgroundColor: '#EDE8DE' }}>
+            <div className="container max-w-6xl mx-auto px-6">
+              <div className="mb-10 relative">
+                <div className="flex items-center gap-3 mb-2">
+                  <DecoLine />
+                  <span className="text-[10px] font-semibold tracking-[0.35em] uppercase text-caramel">
+                    Polecane zabiegi
+                  </span>
                 </div>
+                <h2 className="font-heading text-3xl font-bold" style={{ color: '#1A1208' }}>
+                  {SEASON_LABELS[currentSeason]} — na ten sezon
+                </h2>
+                <SectionNumber n={2} opacity={0.12} className="right-0 bottom-[-8px]" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {seasonalServices.map((s) => (
+                  <div
+                    key={s.id}
+                    className="bg-white p-6 shadow-sm flex flex-col justify-between"
+                    style={{ borderRadius: '20px', border: '1px solid rgba(0,0,0,0.07)' }}
+                  >
+                    <div>
+                      <h3 className="font-heading font-bold text-lg mb-2" style={{ color: '#1A1208' }}>{s.name}</h3>
+                      <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(26,18,8,0.6)' }}>{s.description}</p>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="font-bold" style={{ color: '#B8913A' }}>od {Number(s.price).toFixed(0)} zł</p>
+                      <Link to={`/rezerwacja?serviceId=${s.id}`}>
+                        <Button size="sm" className="rounded-full text-xs font-semibold gap-1" style={{ backgroundColor: '#1A1208', color: '#fff' }}>
+                          Zarezerwuj <ArrowRight size={11} />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── TESTIMONIALS (editorial) ── */}
+        <section style={{ background: '#F0EBE3', padding: '112px 0' }}>
+          <div className="container">
+
+            {/* Section header */}
+            <div className="relative mb-16">
+              <SectionNumber n={3} opacity={0.07} className="top-[-20px] right-0" />
+              <div className="flex items-center gap-4 justify-center">
+                <DecoLine width={40} />
+                <span className="text-[10px] font-semibold tracking-[0.4em] uppercase text-caramel">
+                  Opinie Klientek
+                </span>
+                <DecoLine width={40} />
+              </div>
+              {/* Dekoracyjny cudzysłów */}
+              <span
+                className="absolute right-4 top-[-10px] font-heading italic pointer-events-none select-none"
+                aria-hidden="true"
+                style={{ fontSize: 120, lineHeight: 1, color: 'rgba(196,168,130,0.08)' }}
+              >
+                &ldquo;
+              </span>
+            </div>
+
+            {/* Testimonial grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+              {testimonials.map((t, i) => (
+                <motion.div
+                  key={i}
+                  className="testimonial-col flex flex-col"
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-60px' }}
+                  transition={{ duration: 0.7, delay: i * 0.15, ease: [0.76, 0, 0.24, 1] }}
+                  style={{
+                    padding: i === 0 ? '0 40px 0 0' : i === 2 ? '0 0 0 40px' : '0 40px',
+                    borderRight: i < 2 ? '1px solid rgba(196,168,130,0.25)' : 'none',
+                  }}
+                >
+                  {/* Rating bars */}
+                  <div className="flex gap-1 mb-3">
+                    {[1,2,3,4,5].map((i) => (
+                      <span key={i} className="inline-block rounded-sm" style={{
+                        width: 14, height: 2, background: '#C4A882'
+                      }} />
+                    ))}
+                  </div>
+
+                  {/* Dekoracyjny cudzysłów */}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      fontFamily: 'Cormorant Garamond, Georgia, serif',
+                      fontSize: '96px',
+                      lineHeight: 1,
+                      color: '#C4A882',
+                      opacity: 0.5,
+                      display: 'block',
+                      marginBottom: '-8px',
+                      fontStyle: 'italic',
+                      fontWeight: 300,
+                      userSelect: 'none',
+                    }}
+                  >
+                    &ldquo;
+                  </span>
+
+                  {/* Cytat */}
+                  <p
+                    style={{
+                      fontFamily: 'Cormorant Garamond, Georgia, serif',
+                      fontSize: '21px',
+                      fontStyle: 'italic',
+                      fontWeight: 300,
+                      lineHeight: 1.7,
+                      color: '#1C1510',
+                      marginBottom: '32px',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {t.quote}
+                  </p>
+
+                  {/* Atrybucja */}
+                  <div style={{ marginTop: 'auto' }}>
+                    <div style={{ width: '24px', height: '1px', background: '#C4A882', marginBottom: '14px' }} />
+                    <p style={{
+                      fontFamily: 'DM Sans, sans-serif',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: '#1C1510',
+                      marginBottom: '4px',
+                    }}>
+                      {t.author}
+                    </p>
+                    <p style={{
+                      fontFamily: 'DM Sans, sans-serif',
+                      fontSize: '10px',
+                      fontWeight: 400,
+                      letterSpacing: '0.3em',
+                      textTransform: 'uppercase',
+                      color: '#6B5A4E',
+                    }}>
+                      {t.label}
+                    </p>
+                  </div>
+                </motion.div>
               ))}
             </div>
+
           </div>
         </section>
 
@@ -515,13 +716,16 @@ export const Home = () => {
         {/* ── 7. FAQ ── */}
         <section className="py-24" style={{ backgroundColor: '#F5F0EB' }} aria-labelledby="faq-heading">
           <div className="container max-w-3xl mx-auto px-6">
-            <h2
-              id="faq-heading"
-              className="font-heading text-4xl font-bold mb-12 text-center"
-              style={{ color: '#1A1208' }}
-            >
-              Najczęściej zadawane pytania
-            </h2>
+            <div className="relative mb-12 text-center">
+              <SectionNumber n={4} opacity={0.07} className="top-[-10px] right-0" />
+              <h2
+                id="faq-heading"
+                className="font-heading text-4xl font-bold text-center"
+                style={{ color: '#1A1208' }}
+              >
+                Najczęściej zadawane pytania
+              </h2>
+            </div>
             <dl className="space-y-3">
               {faqSchema.mainEntity.map((item, i) => (
                 <details
