@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatPrice } from '@/lib/utils';
 import { ServiceRating } from '@/components/reviews/ServiceRating';
+import { ArrowRight } from 'lucide-react';
 
 interface ServiceCardProps {
   service: {
@@ -28,7 +29,7 @@ export const ServiceCard = ({ service, index = 0 }: ServiceCardProps) => {
       style={{ animationDelay: `${delay}ms` }}
     >
       <div
-        className="overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1 shadow-[0_8px_32px_rgba(28,21,16,0.12)] hover:shadow-[0_16px_48px_rgba(28,21,16,0.18)]"
+        className="overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] shadow-[0_8px_32px_rgba(28,21,16,0.12)] hover:shadow-[0_16px_48px_rgba(28,21,16,0.18)]"
         style={{
           borderRadius: '4px',
         }}
@@ -85,8 +86,8 @@ export const ServiceCard = ({ service, index = 0 }: ServiceCardProps) => {
               </div>
             )}
           </div>
-          <div aria-hidden="true" className="px-5 py-2.5 bg-espresso text-ivory text-[9px] tracking-[0.25em] uppercase font-medium hover:bg-espresso/90 transition-colors">
-            Umów wizytę
+          <div aria-hidden="true" className="flex items-center gap-1.5 px-5 py-2.5 bg-espresso text-ivory text-[9px] tracking-[0.25em] uppercase font-medium hover:bg-espresso/90 transition-colors">
+            Umów wizytę <ArrowRight size={10} />
           </div>
         </div>
       </div>

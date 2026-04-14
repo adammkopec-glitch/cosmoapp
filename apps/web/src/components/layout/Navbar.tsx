@@ -1,8 +1,9 @@
 // apps/web/src/components/layout/Navbar.tsx
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { authApi } from '@/api/auth.api';
+import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_LINKS = [
@@ -57,7 +58,7 @@ export const Navbar = () => {
           <Link
             to="/"
             className="font-display text-[13px] tracking-[0.45em] uppercase"
-            style={{ color: scrolled ? '#1C1510' : '#FAF7F2', fontStyle: 'normal', fontWeight: 300 }}
+            style={{ color: scrolled ? '#1C1510' : '#FAF7F2', fontStyle: 'normal', fontWeight: 300, letterSpacing: '0.08em' }}
           >
             Cosmo
           </Link>
@@ -65,14 +66,16 @@ export const Navbar = () => {
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
             {NAV_LINKS.map(({ to, label }) => (
-              <Link
+              <NavLink
                 key={to}
                 to={to}
-                className="text-[11px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+                className={({ isActive }) =>
+                  `text-[11px] tracking-[0.2em] uppercase transition-colors hover:text-caramel${isActive ? ' border-b border-caramel pb-px' : ''}`
+                }
                 style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.75)' }}
               >
                 {label}
-              </Link>
+              </NavLink>
             ))}
           </div>
 
@@ -80,17 +83,9 @@ export const Navbar = () => {
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
               <>
-                <Link
-                  to="/rezerwacja"
-                  data-tour="navbar-booking-btn"
-                  className="px-6 py-2.5 text-[10px] tracking-[0.25em] uppercase font-medium transition-opacity hover:opacity-90"
-                  style={{
-                    background: scrolled ? '#1C1510' : '#FAF7F2',
-                    color: scrolled ? '#FAF7F2' : '#1C1510',
-                  }}
-                >
-                  Rezerwacja
-                </Link>
+                <Button variant="ghost-underline" size="sm" asChild data-tour="navbar-booking-btn">
+                  <Link to="/rezerwacja">Rezerwacja</Link>
+                </Button>
                 <Link
                   to={panelLink}
                   className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"

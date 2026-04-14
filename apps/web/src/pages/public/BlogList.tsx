@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { Clock, Heart, MessageCircle } from 'lucide-react';
 import { PageSEO } from '@/components/shared/SEO';
 import { BlogListSkeleton } from '@/components/skeletons';
+import { DecoLine } from '@/components/shared/DecoElements';
 
 const LikeButton = ({
   post,
@@ -244,7 +245,7 @@ export const BlogList = () => {
             {posts?.filter((p: any) => p.isPublished).map((post: any) => (
               <Link to={`/blog/${post.slug}`} key={post.id} className="block group">
                 <div
-                  className="flex flex-col sm:flex-row gap-0 overflow-hidden transition-all duration-300"
+                  className="relative flex flex-col sm:flex-row gap-0 overflow-hidden transition-all duration-300"
                   style={{
                     borderRadius: '16px',
                     border: '1px solid rgba(0,0,0,0.07)',
@@ -254,6 +255,23 @@ export const BlogList = () => {
                   onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = '0 6px 24px rgba(0,0,0,0.09)')}
                   onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)')}
                 >
+                  {post.createdAt && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute pointer-events-none select-none"
+                      style={{
+                        fontSize: 48,
+                        color: 'rgba(196,168,130,0.07)',
+                        fontFamily: 'Playfair Display, Georgia, serif',
+                        right: 12,
+                        top: 8,
+                        lineHeight: 1,
+                        zIndex: 0,
+                      }}
+                    >
+                      {new Date(post.createdAt).getFullYear()}
+                    </span>
+                  )}
                   {/* Desktop thumbnail (left side) */}
                   <div
                     className="shrink-0 overflow-hidden hidden sm:block"
@@ -300,10 +318,10 @@ export const BlogList = () => {
                       {post.tags?.slice(0, 3).map((tag: any) => (
                         <span
                           key={tag.id}
-                          className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                          className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full"
                           style={{ backgroundColor: 'rgba(184,145,58,0.1)', color: '#B8913A' }}
                         >
-                          #{tag.name}
+                          <DecoLine width={8} />#{tag.name}
                         </span>
                       ))}
                       <div className="flex items-center gap-3 ml-auto text-xs" style={{ color: 'rgba(26,18,8,0.45)' }}>

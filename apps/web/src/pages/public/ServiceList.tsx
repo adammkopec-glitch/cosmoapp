@@ -5,6 +5,7 @@ import { PageSEO } from '@/components/shared/SEO';
 import { ServiceCard } from '@/components/ui/ServiceCard';
 import { ServiceListSkeleton } from '@/components/skeletons';
 import { useClipReveal } from '@/hooks/useClipReveal';
+import { GeoArc } from '@/components/shared/DecoElements';
 
 export const ServiceList = () => {
   const { data: services, isLoading } = useQuery({ queryKey: ['services'], queryFn: servicesApi.getAll });
@@ -25,7 +26,8 @@ export const ServiceList = () => {
       />
 
       {/* Hero */}
-      <section className="py-24 text-center" style={{ background: '#F0EBE3' }}>
+      <section className="py-24 text-center relative" style={{ background: '#F0EBE3' }}>
+        <GeoArc size={120} opacity={0.2} className="top-4 right-4" />
         <div className="container">
           <p className="eyebrow mb-5">Nasza Oferta</p>
           <h1

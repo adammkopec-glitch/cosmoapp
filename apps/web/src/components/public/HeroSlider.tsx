@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { heroApi } from '@/api/hero.api';
 import { Button } from '@/components/ui/button';
+import { DecoLine } from '@/components/shared/DecoElements';
 
 const POSITION_CLASSES: Record<string, string> = {
   'top-left':      'items-start justify-start text-left',
@@ -83,6 +84,12 @@ export const HeroSlider = () => {
             key={slide.id}
             className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
+            {/* Decorative arc overlay */}
+            <div
+              aria-hidden="true"
+              className="absolute top-4 right-4 pointer-events-none z-10"
+              style={{ width: 80, height: 80, borderRadius: '50%', border: '1px solid rgba(196,168,130,0.2)' }}
+            />
             <img
               src={slide.imagePath}
               alt={slide.title ?? ''}
@@ -103,9 +110,12 @@ export const HeroSlider = () => {
               <div className={`absolute inset-0 flex p-10 md:p-16 ${posClass}`}>
                 <div className="max-w-2xl">
                   {slide.heading && (
-                    <h1 className={`text-3xl md:text-5xl font-bold text-white mb-4 drop-shadow-md ${fontClass}`}>
-                      {slide.heading}
-                    </h1>
+                    <>
+                      <DecoLine className="mb-4" />
+                      <h1 className={`text-3xl md:text-5xl font-bold text-white mb-4 drop-shadow-md ${fontClass}`}>
+                        {slide.heading}
+                      </h1>
+                    </>
                   )}
                   {slide.subtitle && (
                     <p className="text-base md:text-lg text-white/90 mb-8 drop-shadow">
@@ -115,9 +125,15 @@ export const HeroSlider = () => {
                   {slide.buttons && slide.buttons.length > 0 && (
                     <div className={`flex flex-wrap gap-3 ${buttonJustify}`}>
                       {slide.buttons.map((btn, j) => (
-                        <Link key={j} to={btn.href}>
-                          <Button variant={btn.variant} size="lg">{btn.label}</Button>
-                        </Link>
+                        btn.href.startsWith('http://') || btn.href.startsWith('https://') ? (
+                          <a key={j} href={btn.href} target="_blank" rel="noopener noreferrer">
+                            <Button variant={btn.variant} size="lg">{btn.label}</Button>
+                          </a>
+                        ) : (
+                          <Link key={j} to={btn.href}>
+                            <Button variant={btn.variant} size="lg">{btn.label}</Button>
+                          </Link>
+                        )
                       ))}
                     </div>
                   )}
