@@ -79,12 +79,14 @@ interface WeatherData {
   aqi: number;         // EU AQI 0–300
 }
 
+type ConditionKey = 'HOT' | 'COLD' | 'HIGH_UV' | 'RAINY' | 'SMOG' | 'HUMID' | 'DRY';
+
 type RuleParams = {
   label: string;
   recommendation: string;
   sortOrder?: number;
   isActive?: boolean;
-  conditions?: string[];
+  conditions?: ConditionKey[];
 };
 
 export const createRule = async (data: RuleParams) => {
@@ -102,7 +104,13 @@ export const createRule = async (data: RuleParams) => {
 export const updateRule = async (id: string, data: Partial<RuleParams>) => {
   const rule = await prisma.skinWeatherRule.findUnique({ where: { id } });
   if (!rule) throw new AppError('Reguła nie znaleziona', 404);
-  return prisma.skinWeatherRule.update({ where: { id }, data });
+  const updateData: Partial<RuleParams> = {};
+  if (data.label !== undefined)          updateData.label = data.label;
+  if (data.recommendation !== undefined) updateData.recommendation = data.recommendation;
+  if (data.sortOrder !== undefined)      updateData.sortOrder = data.sortOrder;
+  if (data.isActive !== undefined)       updateData.isActive = data.isActive;
+  if (data.conditions !== undefined)     updateData.conditions = data.conditions;
+  return prisma.skinWeatherRule.update({ where: { id }, data: updateData });
 };
 
 
@@ -184,7 +192,7 @@ function buildWeatherData(weather: any, airQuality: any): WeatherData {
   };
 }
 
-function checkCondition(condition: string, w: WeatherData): boolean {
+function checkCondition(condition: ConditionKey, w: WeatherData): boolean {
   switch (condition) {
     case 'HOT':     return w.temperature > 28;
     case 'COLD':    return w.temperature < 5;
@@ -201,7 +209,7 @@ const matchRulesToWeather = (rules: any[], weather: any, airQuality: any) => {
   const w = buildWeatherData(weather, airQuality);
   return rules
     .filter(r => r.isActive && r.conditions.length > 0)
-    .filter(r => (r.conditions as string[]).every(c => checkCondition(c, w)))
+    .filter(r => (r.conditions as ConditionKey[]).every(c => checkCondition(c, w)))
     .map(r => ({ label: r.label, recommendation: r.recommendation }));
 };
 
