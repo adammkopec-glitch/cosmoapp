@@ -5,6 +5,19 @@ import { Plus, Pencil, Trash2, X, Loader2, Cloud, RefreshCw } from 'lucide-react
 import { isAxiosError } from 'axios';
 import { skinWeatherApi } from '@/api/skin-weather.api';
 
+// ─── Domain type ─────────────────────────────────────────────────────────────
+
+interface SkinWeatherRule {
+  id: string;
+  label: string;
+  recommendation: string;
+  isActive: boolean;
+  sortOrder: number;
+  conditions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Condition presets ─────────────────────────────────────────────────────────
 
 type ConditionKey = 'HOT' | 'COLD' | 'HIGH_UV' | 'RAINY' | 'SMOG' | 'HUMID' | 'DRY';
@@ -188,7 +201,7 @@ function RuleForm({
 
 // ─── Rule Card ─────────────────────────────────────────────────────────────────
 
-function RuleCard({ rule, onEdit, onDelete }: { rule: any; onEdit: () => void; onDelete: () => void }) {
+function RuleCard({ rule, onEdit, onDelete }: { rule: SkinWeatherRule; onEdit: () => void; onDelete: () => void }) {
   const conditions: string[] = rule.conditions ?? [];
   return (
     <div className={`p-4 rounded-xl border-l-4 transition-all ${
@@ -239,15 +252,15 @@ function RuleCard({ rule, onEdit, onDelete }: { rule: any; onEdit: () => void; o
 export const SkinWeatherRules = () => {
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
-  const [editingRule, setEditingRule] = useState<any | null>(null);
+  const [editingRule, setEditingRule] = useState<SkinWeatherRule | null>(null);
 
-  const { data: rules = [], isLoading } = useQuery<any[]>({
+  const { data: rules = [], isLoading } = useQuery<SkinWeatherRule[]>({
     queryKey: ['skin-weather', 'rules'],
     queryFn: skinWeatherApi.getRules,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => skinWeatherApi.createRule(data),
+    mutationFn: (data: FormState) => skinWeatherApi.createRule(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['skin-weather', 'rules'] });
       setFormOpen(false);
@@ -257,7 +270,7 @@ export const SkinWeatherRules = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => skinWeatherApi.updateRule(id, data),
+    mutationFn: ({ id, data }: { id: string; data: FormState }) => skinWeatherApi.updateRule(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['skin-weather', 'rules'] });
       setEditingRule(null);
@@ -293,7 +306,7 @@ export const SkinWeatherRules = () => {
     }
   };
 
-  const openEdit = (rule: any) => {
+  const openEdit = (rule: SkinWeatherRule) => {
     setEditingRule(rule);
     setFormOpen(true);
   };
@@ -313,7 +326,7 @@ export const SkinWeatherRules = () => {
         label: editingRule.label,
         recommendation: editingRule.recommendation,
         isActive: editingRule.isActive,
-        conditions: editingRule.conditions ?? [],
+        conditions: (editingRule.conditions ?? []) as ConditionKey[],
       }
     : EMPTY_FORM;
 
@@ -327,7 +340,7 @@ export const SkinWeatherRules = () => {
           </div>
           <div>
             <h1 className="font-heading text-xl font-semibold">Pogoda dla skóry</h1>
-            <p className="text-sm text-muted-foreground">Reguły procentowe dopasowywane do warunków pogodowych</p>
+            <p className="text-sm text-muted-foreground">Predefiniowane warunki pogodowe aktywowane według profilu skóry</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
