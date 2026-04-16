@@ -23,8 +23,11 @@ model SkinTypeAdvice {
 }
 ```
 
-- 5 rekordów seedowanych przy migracji (SUCHA, TLUSTA, MIESZANA, NORMALNA, WRAZLIWA) z pustą treścią
-- Admin wypełnia w panelu administracyjnym
+### Seeding
+
+5 rekordów w `prisma/seed.ts` używając `upsert` (klucz: `skinType`) — spójne z pozostałymi seedami w projekcie. Pusta treść (`content: ''`) jako wartość domyślna. Seeding uruchamiany przez `pnpm prisma:seed`.
+
+Seeding jest autorytatywną gwarancją istnienia 5 rekordów. Endpoint PUT używa `upsert` jako zabezpieczenie na wypadek uruchomienia przed seedem, ale admin UI nie musi obsługiwać stanu zero rekordów.
 
 ### Bez zmian w istniejących modelach
 
@@ -40,14 +43,16 @@ Moduł: `apps/server/src/modules/skin-weather/`
 | Method | Path | Auth | Opis |
 |--------|------|------|------|
 | GET | `/api/skin-weather/skin-type-advice` | user | Zwraca wszystkie 5 rekordów SkinTypeAdvice |
-| PUT | `/api/skin-weather/skin-type-advice/:skinType` | admin | Aktualizuje treść dla danego typu skóry |
+| PUT | `/api/skin-weather/skin-type-advice/:skinType` | admin | Upsert treści dla danego typu skóry |
+
+`updateSkinTypeAdvice` po stronie serwisu używa `prisma.skinTypeAdvice.upsert` — tworzy rekord jeśli nie istnieje. Pusta treść (`content: ''`) jest dopuszczalna (admin może wyczyścić porady). Parametr `:skinType` musi być walidowany w serwisie przed wywołaniem Prismy — jeśli wartość nie należy do enum `SkinType` (SUCHA, TLUSTA, MIESZANA, NORMALNA, WRAZLIWA), serwis rzuca `AppError('Nieprawidłowy typ skóry', 400)`.
 
 Pliki do zmiany:
 - `skin-weather.service.ts` — dodać `getSkinTypeAdvice()`, `updateSkinTypeAdvice(skinType, content)`
 - `skin-weather.controller.ts` — dodać `getSkinTypeAdvice`, `updateSkinTypeAdvice`
 - `skin-weather.router.ts` — zarejestrować nowe trasy
 - `prisma/schema.prisma` — dodać model `SkinTypeAdvice`
-- `prisma/seed.ts` lub migracja — zaseedować 5 rekordów
+- `prisma/seed.ts` — dodać upsert dla 5 rekordów SkinTypeAdvice
 
 ---
 
@@ -56,28 +61,22 @@ Pliki do zmiany:
 ### Lokalizacja
 `apps/web/src/components/skin-weather/SkinTypeQuiz.tsx`
 
+### Obsługa lokalizacji
+
+Komponent `SkinTypeQuiz` jest renderowany wewnątrz `SkinWeatherProfile`, gdzie hook `useSkinWeatherLocation(true)` jest już montowany. Quiz przy zapisie używa tej samej strategii placeholder co istniejący `ProfileForm`: wysyła `locationLat: 0, locationLng: 0, cityName: 'Wykrywanie...'` — hook aktualizuje lokalizację automatycznie po detekcji GPS. Jeśli GPS jest zablokowany lub niedostępny, wartości `0, 0` pozostają trwałym fallbackiem — jest to zachowanie dziedziczone z istniejącego kodu i akceptowane. Implementacja NIE powinna dodawać walidacji odrzucającej `0, 0`.
+
 ### Logika punktowa
 
 8 pytań, każda odpowiedź zawiera obiekt wag `{ SUCHA, TLUSTA, MIESZANA, NORMALNA, WRAZLIWA }`.
 Na koniec: `scores = sum of weights per type` → wybrany typ = `argmax(scores)`.
-Remis (dwa typy z równą liczbą punktów) → ekran wyboru między nimi.
 
-### Pytania
+**Remis:** tylko gdy dwa typy mają dokładnie równą liczbę punktów → wyświetlamy ekran wyboru między nimi (single select z opisami). Przy różnicy 1+ pkt — wyższy wynik wygrywa.
 
-| # | Pytanie | Maks. pkt na typ |
-|---|---------|-----------------|
-| 1 | Jak czuje się skóra 2–3 h po myciu? | 3 |
-| 2 | Jak wyglądają Twoje pory? | 3 |
-| 3 | Tendencja do wyprysków? | 3 |
-| 4 | Reakcja na nowe kosmetyki? | 3 |
-| 5 | Skóra w ciągu dnia bez makijażu? | 3 |
-| 6 | Reakcja na mróz/wiatr/słońce? | 3 |
-| 7 | Co czujesz nakładając krem? | 3 |
-| 8 | Widoczne naczynka / zaczerwienienia? | 3 |
+### Pytania i wagi
 
-Maks. łączny wynik na typ: ~24 pkt.
+Punkty per typ nie są symetryczne — to właściwość quizu wynikająca z wag poszczególnych pytań. Algorytm `argmax` działa poprawnie niezależnie od tej asymetrii.
 
-### Szczegółowe wagi odpowiedzi
+---
 
 **Pytanie 1** — Jak czuje się skóra 2–3 h po myciu?
 - Napięta, ciągnie, szorstka → S:3
@@ -142,13 +141,14 @@ Maks. łączny wynik na typ: ~24 pkt.
 ### Nowy użytkownik (brak profilu)
 
 1. Wejście na `/user/pogoda-skory` → brak profilu → renderowany `<SkinTypeQuiz />`
-2. Wizard: progress bar (krok X/8) + pytanie + odpowiedzi (single select)
+2. Wizard: progress bar (krok X/8) + pytanie + odpowiedzi (single select, card-style)
 3. Przyciski: Wstecz / Dalej
 4. Krok 9 — Wynik:
    - Chip z typem + nazwa + opis
    - Opcja „Zmień ręcznie" (select z 5 opcjami)
+   - Jeśli remis dokładny → ekran wyboru między dwoma typami
 5. Krok 10 — Problemy skórne (multi-select, opcjonalne, istniejące SKIN_CONCERNS)
-6. „Zapisz profil" → `skinWeatherApi.upsertProfile(...)` → invalidate queries → widok główny
+6. „Zapisz profil" → `skinWeatherApi.upsertProfile({ skinType, skinConcerns, locationLat: 0, locationLng: 0, cityName: 'Wykrywanie...' })` → invalidate queries → widok główny
 
 ### Powracający użytkownik (ma profil)
 
@@ -157,6 +157,8 @@ Maks. łączny wynik na typ: ~24 pkt.
   ┌─ Sekcja A: Twój typ skóry ──────────────────┐
   │  chip z typem + przycisk "Zmień"             │
   │  Porady admina dla tego typu (treść)         │
+  │  (gdy content puste: "Admin nie dodał jeszcze│
+  │   porad dla tego typu skóry.")               │
   └──────────────────────────────────────────────┘
   ┌─ Sekcja B: Raport pogodowy ─────────────────┐
   │  (istniejący TodayReport)                    │
@@ -168,23 +170,38 @@ Maks. łączny wynik na typ: ~24 pkt.
   (powiadomienia, lokalizacja, zmiana typu skóry)
 ```
 
-Przycisk „Zmień" otwiera modal z opcją: ponowny quiz lub ręczny wybór.
+Przycisk „Zmień" — inline (bez modala, zgodnie z wzorcem projektu): rozwija panel z dwoma opcjami:
+- „Wykonaj quiz ponownie" → montuje `<SkinTypeQuiz />` jako inline wizard
+- „Wybierz ręcznie" → select z 5 opcjami + przycisk Zapisz
+
+### Collapsible "Ustawienia profilu" (na dole strony)
+
+Sekcja zwijana, domyślnie zamknięta. Zawiera:
+- **Problemy skórne** — multi-select `skinConcerns` (te same opcje co w quizie, krok 10); edytowalne po zapisaniu profilu; przycisk „Zapisz zmiany"
+- **Powiadomienia push** — toggle (istniejący `notificationsEnabled`); zapis przez `upsertProfile`
+- **Lokalizacja** — informacja tylko do odczytu (miasto wykryte z GPS); auto-aktualizowane przez `useSkinWeatherLocation`
+
+Zmiana typu skóry **nie jest** częścią collapsible — obsługuje ją wyłącznie przycisk „Zmień" w Sekcji A.
 
 ---
 
 ## 6. Frontend — Panel admina
 
-### Lokalizacja
-Nowa sekcja w istniejącej stronie `apps/web/src/pages/admin/SkinWeatherRules.tsx`
-lub nowa strona `apps/web/src/pages/admin/SkinTypeAdvice.tsx` z osobną trasą.
+### Nawigacja
 
-**Preferowane: osobna strona** (`/admin/typy-skory`) — zachowanie separacji odpowiedzialności.
+**Porady dla typów skóry są dodane jako nowa zakładka (tab) w istniejącej stronie `/admin/pogoda-skory`** — nie tworzymy osobnej trasy. Strona `SkinWeatherRules` dostaje dwa taby:
+- `Reguły pogodowe` (istniejąca zawartość)
+- `Porady dla typów skóry` (nowa sekcja)
 
-### Widok
-- 5 kart (jedna per typ skóry)
-- Każda karta: nazwa typu + textarea z treścią porad
+Bez zmian w `router.tsx` i `AdminLayout.tsx`.
+
+### Widok zakładki "Porady dla typów skóry"
+
+- 5 kart (jedna per typ skóry) wyświetlanych zawsze (endpoint upsert tworzy brakujące rekordy)
+- Każda karta: nazwa typu + opis + textarea z treścią porad
 - Przycisk „Zapisz" per karta (niezależne zapisy)
 - Wskaźnik „Ostatnia aktualizacja: ..."
+- Pusta treść jest dozwolona
 
 ---
 
@@ -192,7 +209,8 @@ lub nowa strona `apps/web/src/pages/admin/SkinTypeAdvice.tsx` z osobną trasą.
 
 `apps/web/src/api/skin-weather.api.ts` — nowe funkcje:
 ```typescript
-getSkinTypeAdvice: () => api.get('/skin-weather/skin-type-advice').then(r => r.data),
+getSkinTypeAdvice: () =>
+  api.get('/skin-weather/skin-type-advice').then(r => r.data),
 updateSkinTypeAdvice: (skinType: string, content: string) =>
   api.put(`/skin-weather/skin-type-advice/${skinType}`, { content }).then(r => r.data),
 ```
@@ -203,22 +221,22 @@ updateSkinTypeAdvice: (skinType: string, content: string) =>
 
 | Plik | Akcja |
 |------|-------|
-| `prisma/schema.prisma` | Dodać model `SkinTypeAdvice` |
-| `prisma/migrations/...` | Nowa migracja |
-| `skin-weather.service.ts` | Dodać `getSkinTypeAdvice`, `updateSkinTypeAdvice` |
-| `skin-weather.controller.ts` | Dodać handlery |
-| `skin-weather.router.ts` | Zarejestrować trasy |
-| `src/api/skin-weather.api.ts` | Dodać `getSkinTypeAdvice`, `updateSkinTypeAdvice` |
-| `src/components/skin-weather/SkinTypeQuiz.tsx` | **Nowy** — wizard quizu |
-| `src/pages/user/SkinWeatherProfile.tsx` | Przebudować — quiz dla nowych, nowy layout dla powracających |
-| `src/pages/admin/SkinTypeAdvice.tsx` | **Nowy** — admin edytuje porady |
-| `src/router.tsx` | Dodać trasę `/admin/typy-skory` |
-| `apps/web/src/components/layout/AdminLayout.tsx` | Dodać link do nowej trasy |
+| `apps/server/prisma/schema.prisma` | Dodać model `SkinTypeAdvice` |
+| `apps/server/prisma/migrations/...` | Nowa migracja |
+| `apps/server/prisma/seed.ts` | Dodać upsert dla 5 rekordów SkinTypeAdvice |
+| `apps/server/src/modules/skin-weather/skin-weather.service.ts` | Dodać `getSkinTypeAdvice`, `updateSkinTypeAdvice` |
+| `apps/server/src/modules/skin-weather/skin-weather.controller.ts` | Dodać handlery |
+| `apps/server/src/modules/skin-weather/skin-weather.router.ts` | Zarejestrować trasy |
+| `apps/web/src/api/skin-weather.api.ts` | Dodać `getSkinTypeAdvice`, `updateSkinTypeAdvice` |
+| `apps/web/src/components/skin-weather/SkinTypeQuiz.tsx` | **Nowy** — wizard quizu (8 pytań + wynik + problemy) |
+| `apps/web/src/pages/user/SkinWeatherProfile.tsx` | Przebudować — quiz dla nowych, nowy layout dla powracających |
+| `apps/web/src/pages/admin/SkinWeatherRules.tsx` | Dodać drugi tab "Porady dla typów skóry" |
 
 ---
 
 ## 9. Brak zmian w
 
+- `router.tsx`, `AdminLayout.tsx` — nawigacja admina bez zmian
 - `SkinWeatherRule` / `SkinWeatherReport` — reguły pogodowe bez zmian
 - `SkinWeatherWidget.tsx` (dashboard) — bez zmian
 - Istniejące endpointy skin-weather — bez zmian
