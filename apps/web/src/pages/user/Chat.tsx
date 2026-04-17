@@ -54,10 +54,9 @@ export const UserChat = () => {
 
   return (
     <div
-      className="flex flex-col overflow-hidden"
+      className="flex flex-col flex-1 min-h-0 overflow-hidden"
       data-tour="chat-window"
       style={{
-        height: 'calc(100vh - 12rem)',
         borderRadius: 20,
         border: '1px solid rgba(0,0,0,0.07)',
         background: '#fff',
@@ -80,7 +79,7 @@ export const UserChat = () => {
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 flex flex-col gap-3"
+        className="flex-1 overflow-y-auto min-h-0 p-4 flex flex-col gap-3"
         style={{ background: 'rgba(245,240,235,0.5)' }}
       >
         {/* Privacy notice */}

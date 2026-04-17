@@ -102,6 +102,17 @@ export const UserLoyalty = () => {
           currentTierName={user?.loyaltyTier || 'BRONZE'}
           nextTierName={nextTier.name}
         />
+        {nextTier.name !== 'Maksymalny Poziom' && completedVisits >= nextTier.threshold * 0.8 && completedVisits < nextTier.threshold && (
+          <div
+            className="mt-4 rounded-2xl p-4"
+            style={{ background: 'rgba(184,145,58,0.08)', border: '1px solid rgba(184,145,58,0.25)' }}
+          >
+            <p className="text-[13px] font-semibold" style={{ color: '#92400E' }}>
+              🎯 Blisko {nextTier.name}! Zostały Ci {nextTier.threshold - completedVisits}{' '}
+              {nextTier.threshold - completedVisits === 1 ? 'wizyta' : nextTier.threshold - completedVisits < 5 ? 'wizyty' : 'wizyt'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Active coupons */}
@@ -168,7 +179,7 @@ export const UserLoyalty = () => {
                     </span>
                     <button
                       onClick={() => { navigator.clipboard.writeText(coupon.code); toast.success('Skopiowano kod!'); }}
-                      className="text-xs shrink-0 hover:opacity-70 transition-opacity"
+                      className="text-xs shrink-0 hover:opacity-70 transition-opacity px-3 py-2 rounded-lg min-h-[44px] flex items-center"
                       style={{ color: 'rgba(26,18,8,0.5)' }}
                       title="Kopiuj kod"
                     >

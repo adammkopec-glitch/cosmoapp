@@ -19,6 +19,7 @@ import { BadgesGrid } from '@/components/achievements/BadgesGrid';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { DashboardNewsBanner } from '@/components/dashboard/DashboardNewsBanner';
 import { DecoLine } from '@/components/shared/DecoElements';
+import { SkinWeatherWidget } from '@/components/dashboard/SkinWeatherWidget';
 
 const getNextTierInfo = (completedVisits: number) => {
   if (completedVisits < 30) return { name: 'Srebra', threshold: 30, visitsLeft: 30 - completedVisits };
@@ -189,6 +190,9 @@ export const UserDashboard = () => {
           </span>
         </Link>
       </div>
+
+      {/* Skin weather widget */}
+      <SkinWeatherWidget />
 
       {/* Recommended treatments slider */}
       <RecommendedSlider />

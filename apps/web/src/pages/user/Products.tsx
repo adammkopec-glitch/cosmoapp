@@ -24,13 +24,13 @@ function RecommendationCard({ rec, appointmentId }: { rec: AppointmentRecommenda
   });
 
   return (
-    <div className="bg-white border border-[#B8913A]/20 rounded-xl p-4 flex gap-3">
+    <div className="bg-white border border-[#B8913A]/20 rounded-xl p-4 flex gap-3 min-h-[72px]">
       {/* Product image */}
-      <div className="w-12 h-12 rounded-xl bg-gray-50 flex-shrink-0 overflow-hidden border border-gray-100">
+      <div className="w-16 h-16 rounded-xl bg-gray-50 flex-shrink-0 overflow-hidden border border-gray-100">
         {rec.product?.imagePath ? (
           <img src={rec.product.imagePath} alt={rec.name} className="w-full h-full object-cover" />
         ) : (
-          <Package size={20} className="text-gray-200 m-3" />
+          <Package size={24} className="text-gray-200 m-4" />
         )}
       </div>
 
@@ -39,15 +39,15 @@ function RecommendationCard({ rec, appointmentId }: { rec: AppointmentRecommenda
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[#1A1208] text-sm leading-snug">{rec.name}</p>
             {rec.product?.brand && (
-              <p className="text-xs font-medium text-[#B8913A] mt-0.5">{rec.product.brand}</p>
+              <p className="eyebrow mt-0.5">{rec.product.brand}</p>
             )}
           </div>
           <button
             onClick={() => deleteMutation.mutate()}
             disabled={deleteMutation.isPending}
-            className="flex-shrink-0 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+            className="flex-shrink-0 p-2.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
-            <Trash2 size={14} />
+            <Trash2 size={16} />
           </button>
         </div>
 
