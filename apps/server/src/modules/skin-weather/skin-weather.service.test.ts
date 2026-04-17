@@ -14,7 +14,7 @@ import { prisma } from '../../config/prisma';
 import { getSkinTypeAdvice, updateSkinTypeAdvice } from './skin-weather.service';
 
 describe('getSkinTypeAdvice', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('returns all advice records ordered by skinType', async () => {
     const fakeRecords = [
@@ -29,7 +29,7 @@ describe('getSkinTypeAdvice', () => {
 });
 
 describe('updateSkinTypeAdvice', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('throws 400 for invalid skinType', async () => {
     await expect(updateSkinTypeAdvice('INVALID', 'treść')).rejects.toThrow('Nieprawidłowy typ skóry');

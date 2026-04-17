@@ -171,7 +171,7 @@ export function computeSkinType(answers: number[]): ComputeResult {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function SkinTypeQuiz({ onComplete, isSubmitting = false }: Props) {
+export function SkinTypeQuiz({ onComplete, isSubmitting = false }: Props) {
   const [step, setStep] = useState<Step>({ kind: 'question', index: 0 });
   // answers[i] = selected answer index for question i, or -1 if not answered
   const [answers, setAnswers] = useState<number[]>(Array(8).fill(-1));
@@ -448,3 +448,5 @@ export default function SkinTypeQuiz({ onComplete, isSubmitting = false }: Props
     </div>
   );
 }
+
+export default SkinTypeQuiz;

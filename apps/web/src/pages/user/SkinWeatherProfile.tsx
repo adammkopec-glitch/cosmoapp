@@ -109,7 +109,7 @@ function TodayReport({ hasProfile }: { hasProfile: boolean }) {
             Raport generowany automatycznie o 6:00.<br />Możesz też wygenerować go teraz.
           </p>
           <button
-            onClick={() => generateMutation.mutate()}
+            onClick={() => generateMutation.mutate(undefined)}
             disabled={generateMutation.isPending}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 min-h-[48px] rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
           >

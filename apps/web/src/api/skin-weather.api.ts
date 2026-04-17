@@ -39,7 +39,7 @@ export const skinWeatherApi = {
     sortOrder?: number;
     isActive?: boolean;
     conditions?: string[];
-    thresholds?: Record<string, number>;
+    thresholds?: Record<string, { min: number; max: number }>;
   }) => {
     const res = await api.post('/skin-weather/rules', data);
     return res.data;
@@ -53,7 +53,7 @@ export const skinWeatherApi = {
       sortOrder?: number;
       isActive?: boolean;
       conditions?: string[];
-      thresholds?: Record<string, number>;
+      thresholds?: Record<string, { min: number; max: number }>;
     },
   ) => {
     const res = await api.put(`/skin-weather/rules/${id}`, data);
