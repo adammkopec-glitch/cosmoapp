@@ -9,7 +9,6 @@ import { useAuthStore } from './store/auth.store';
 import { useEffect } from 'react';
 import { api } from './lib/axios';
 import { getSocket } from './lib/socket';
-import { TourProvider } from '@/contexts/TourContext';
 
 function App() {
   const { hydrate, setAccessToken, logout } = useAuthStore();
@@ -59,9 +58,7 @@ function App() {
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
-        <TourProvider>
-          <RouterProvider router={router} />
-        </TourProvider>
+        <RouterProvider router={router} />
         <Toaster position="top-right" richColors />
       </QueryClientProvider>
     </HelmetProvider>

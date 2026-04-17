@@ -35,6 +35,7 @@ import { AdminChat } from './pages/admin/Chat';
 import { AdminEmployees } from './pages/admin/Employees';
 import { AdminWork } from './pages/admin/Work';
 import { AdminHeroSlides } from './pages/admin/HeroSlides';
+import { AdminRecommendedSlides } from './pages/admin/RecommendedSlides';
 import { AdminDiscountCodes } from './pages/admin/DiscountCodes';
 import { AdminTerms } from './pages/admin/AdminTerms';
 import { PublicTerms } from './pages/public/Terms';
@@ -62,6 +63,9 @@ import { UserReferrals } from './pages/user/Referrals';
 import { UserProducts } from './pages/user/Products';
 import { UserSkinJournal } from './pages/user/SkinJournal';
 import { HomecareRoutinePage } from './pages/user/HomecareRoutine';
+import { ChangePassword } from './pages/user/ChangePassword';
+import { SkinWeatherProfile } from './pages/user/SkinWeatherProfile';
+import { SkinWeatherRules } from './pages/admin/SkinWeatherRules';
 
 export const router = createBrowserRouter([
   {
@@ -105,6 +109,8 @@ export const router = createBrowserRouter([
       { path: 'produkty', element: <UserProducts /> },
       { path: 'dziennik', element: <UserSkinJournal /> },
       { path: 'rutyna', element: <HomecareRoutinePage /> },
+      { path: 'zmien-haslo', element: <ChangePassword /> },
+      { path: 'pogoda-skory', element: <SkinWeatherProfile /> },
     ],
   },
   {
@@ -142,6 +148,7 @@ export const router = createBrowserRouter([
       { path: 'chat', element: <AdminChat /> },
       { path: 'praca', element: <AdminWork /> },
       { path: 'hero', element: <AdminHeroSlides /> },
+      { path: 'polecane-zabiegi', element: <AdminRecommendedSlides /> },
       { path: 'kody-rabatowe', element: <AdminDiscountCodes /> },
       { path: 'regulamin', element: <AdminTerms /> },
       { path: 'o-nas', element: <AdminAbout /> },
@@ -151,6 +158,7 @@ export const router = createBrowserRouter([
       { path: 'recenzje', element: <AdminReviews /> },
       { path: 'powiadomienia', element: <AdminNotifications /> },
       { path: 'asortyment', element: <AdminAssortment /> },
+      { path: 'pogoda-skory', element: <SkinWeatherRules /> },
     ],
   },
 ]);

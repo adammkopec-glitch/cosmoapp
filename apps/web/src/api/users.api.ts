@@ -38,4 +38,24 @@ export const usersApi = {
     const res = await api.get(`/users/${userId}`);
     return res.data.data.user;
   },
+
+  getPendingUsers: async () => {
+    const res = await api.get('/users/pending');
+    return res.data.data.users as Array<{ id: string; name: string; email: string; phone: string | null; createdAt: string }>;
+  },
+
+  approveUser: async (id: string) => {
+    const res = await api.post(`/users/${id}/approve`);
+    return res.data;
+  },
+
+  rejectUser: async (id: string) => {
+    const res = await api.post(`/users/${id}/reject`);
+    return res.data;
+  },
+
+  changePassword: async (data: { currentPassword: string; newPassword: string }) => {
+    const res = await api.patch('/users/me/change-password', data);
+    return res.data.data.user;
+  },
 };

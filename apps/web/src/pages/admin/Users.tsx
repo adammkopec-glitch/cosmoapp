@@ -1,12 +1,15 @@
 // filepath: apps/web/src/pages/admin/Users.tsx
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { api } from '@/lib/axios';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { usersApi } from '@/api/users.api';
+import { authApi } from '@/api/auth.api';
 import { toast } from 'sonner';
-import { Phone, Mail, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Phone, Mail, BookOpen, ChevronDown, ChevronUp, UserPlus, Check, X } from 'lucide-react';
 import { UserJournal } from './UserJournal';
 
 const TIER_LABELS: Record<string, string> = { BRONZE: 'Brąz', SILVER: 'Srebro', GOLD: 'Złoto' };
@@ -293,8 +296,18 @@ const UserDetailsModal = ({ userId, onClose }: { userId: string; onClose: () => 
   );
 };
 
+const EMPTY_CREATE_FORM = { name: '', email: '', phone: '', password: '' };
+
 export const AdminUsers = () => {
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(
+    searchParams.get('userId')
+  );
+  const [activeTab, setActiveTab] = useState<'aktywni' | 'oczekujace'>('aktywni');
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
+  const [creating, setCreating] = useState(false);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin', 'users'],
@@ -303,6 +316,51 @@ export const AdminUsers = () => {
       return res.data.data.users;
     }
   });
+
+  const { data: pendingUsers, isLoading: pendingLoading } = useQuery({
+    queryKey: ['admin', 'users', 'pending'],
+    queryFn: usersApi.getPendingUsers,
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => usersApi.approveUser(id),
+    onSuccess: () => {
+      toast.success('Konto zatwierdzone. Użytkownik otrzymał e-mail.');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users', 'pending'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Nie udało się zatwierdzić konta.'),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (id: string) => usersApi.rejectUser(id),
+    onSuccess: () => {
+      toast.success('Rejestracja odrzucona.');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Nie udało się odrzucić rejestracji.'),
+  });
+
+  const handleAdminCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createForm.name || !createForm.email || !createForm.password) {
+      toast.error('Wypełnij wymagane pola: imię, email, hasło.');
+      return;
+    }
+    try {
+      setCreating(true);
+      await authApi.adminCreateUser(createForm);
+      toast.success(`Konto dla ${createForm.email} zostało utworzone.`);
+      setCreateForm(EMPTY_CREATE_FORM);
+      setCreateModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Nie udało się utworzyć konta.');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const copyPhones = () => {
     const phones = users
@@ -319,11 +377,17 @@ export const AdminUsers = () => {
     window.open(`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(emails)}`, '_blank');
   };
 
+  const pendingCount = pendingUsers?.length ?? 0;
+
   return (
     <div className="space-y-6 animate-enter">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-heading font-bold text-primary">Klienci</h1>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setCreateModalOpen(true)}>
+            <UserPlus size={14} />
+            Utwórz konto
+          </Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={copyPhones} disabled={!users?.length}>
             <Phone size={14} />
             Kopiuj numery
@@ -335,54 +399,217 @@ export const AdminUsers = () => {
         </div>
       </div>
 
-      <Card className="border-border/50 shadow-sm rounded-2xl overflow-hidden">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-muted/30 text-muted-foreground uppercase text-xs font-bold border-b">
-                <tr>
-                  <th className="px-6 py-5">Imię i nazwisko</th>
-                  <th className="px-6 py-5">Adres Email</th>
-                  <th className="px-6 py-5">Telefon</th>
-                  <th className="px-6 py-5">Wizyty</th>
-                  <th className="px-6 py-5">Uprawnienia</th>
-                  <th className="px-6 py-5 text-right">Zarządzaj</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40 bg-card">
-                {isLoading ? (
-                  <tr><td colSpan={6} className="p-12 text-center animate-pulse text-muted-foreground">Wczytywanie listy klientów...</td></tr>
-                ) : users?.map((u: any) => (
-                  <tr key={u.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="px-6 py-5 font-bold text-foreground">{u.name}</td>
-                    <td className="px-6 py-5 text-muted-foreground font-medium">{u.email}</td>
-                    <td className="px-6 py-5 font-medium">{u.phone || '-'}</td>
-                    <td className="px-6 py-5 font-medium">{u._count?.appointments ?? 0}</td>
-                    <td className="px-6 py-5">
-                      <span className={`px-3 py-1.5 rounded-md text-[11px] font-black tracking-widest uppercase ${u.role === 'ADMIN' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground shadow-sm'}`}>
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="font-semibold text-primary"
-                        onClick={() => setSelectedUserId(u.id)}
-                      >
-                        Szczegóły
-                      </Button>
-                    </td>
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border/50">
+        <button
+          onClick={() => setActiveTab('aktywni')}
+          className={`px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+            activeTab === 'aktywni'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Aktywni
+        </button>
+        <button
+          onClick={() => setActiveTab('oczekujace')}
+          className={`px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+            activeTab === 'oczekujace'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Oczekujące
+          {pendingCount > 0 && (
+            <span className="bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
+              {pendingCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'aktywni' && (
+        <Card className="border-border/50 shadow-sm rounded-2xl overflow-hidden">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/30 text-muted-foreground uppercase text-xs font-bold border-b">
+                  <tr>
+                    <th className="px-6 py-5">Imię i nazwisko</th>
+                    <th className="px-6 py-5">Adres Email</th>
+                    <th className="px-6 py-5">Telefon</th>
+                    <th className="px-6 py-5">Wizyty</th>
+                    <th className="px-6 py-5">Uprawnienia</th>
+                    <th className="px-6 py-5 text-right">Zarządzaj</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                </thead>
+                <tbody className="divide-y divide-border/40 bg-card">
+                  {isLoading ? (
+                    <tr><td colSpan={6} className="p-12 text-center animate-pulse text-muted-foreground">Wczytywanie listy klientów...</td></tr>
+                  ) : users?.map((u: any) => (
+                    <tr key={u.id} className="hover:bg-muted/10 transition-colors">
+                      <td className="px-6 py-5 font-bold text-foreground">{u.name}</td>
+                      <td className="px-6 py-5 text-muted-foreground font-medium">{u.email}</td>
+                      <td className="px-6 py-5 font-medium">{u.phone || '-'}</td>
+                      <td className="px-6 py-5 font-medium">{u._count?.appointments ?? 0}</td>
+                      <td className="px-6 py-5">
+                        <span className={`px-3 py-1.5 rounded-md text-[11px] font-black tracking-widest uppercase ${u.role === 'ADMIN' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground shadow-sm'}`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="font-semibold text-primary"
+                          onClick={() => setSelectedUserId(u.id)}
+                        >
+                          Szczegóły
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'oczekujace' && (
+        <Card className="border-border/50 shadow-sm rounded-2xl overflow-hidden">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/30 text-muted-foreground uppercase text-xs font-bold border-b">
+                  <tr>
+                    <th className="px-6 py-5">Imię i nazwisko</th>
+                    <th className="px-6 py-5">Adres Email</th>
+                    <th className="px-6 py-5">Telefon</th>
+                    <th className="px-6 py-5">Data rejestracji</th>
+                    <th className="px-6 py-5 text-right">Akcje</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40 bg-card">
+                  {pendingLoading ? (
+                    <tr><td colSpan={5} className="p-12 text-center animate-pulse text-muted-foreground">Wczytywanie...</td></tr>
+                  ) : !pendingUsers?.length ? (
+                    <tr><td colSpan={5} className="p-12 text-center text-muted-foreground">Brak oczekujących rejestracji.</td></tr>
+                  ) : pendingUsers.map((u: any) => (
+                    <tr key={u.id} className="hover:bg-muted/10 transition-colors">
+                      <td className="px-6 py-5 font-bold text-foreground">{u.name}</td>
+                      <td className="px-6 py-5 text-muted-foreground font-medium">{u.email}</td>
+                      <td className="px-6 py-5 font-medium">{u.phone || '-'}</td>
+                      <td className="px-6 py-5 text-muted-foreground">{formatDate(u.createdAt)}</td>
+                      <td className="px-6 py-5 text-right flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => approveMutation.mutate(u.id)}
+                          disabled={approveMutation.isPending || rejectMutation.isPending}
+                        >
+                          <Check size={14} />
+                          Zatwierdź
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 border-red-300 text-red-600 hover:bg-red-50"
+                          onClick={() => rejectMutation.mutate(u.id)}
+                          disabled={approveMutation.isPending || rejectMutation.isPending}
+                        >
+                          <X size={14} />
+                          Odrzuć
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {selectedUserId && (
         <UserDetailsModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+      )}
+
+      {/* Create account modal */}
+      {createModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={() => { setCreateModalOpen(false); setCreateForm(EMPTY_CREATE_FORM); }}
+        >
+          <div
+            className="bg-background rounded-2xl shadow-xl w-full max-w-md"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-6 border-b flex justify-between items-center bg-muted/20">
+              <h2 className="text-xl font-bold font-heading">Utwórz konto użytkownika</h2>
+              <button
+                onClick={() => { setCreateModalOpen(false); setCreateForm(EMPTY_CREATE_FORM); }}
+                className="text-muted-foreground hover:text-foreground font-bold text-xl p-2 leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            <form onSubmit={handleAdminCreate} className="p-6 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Konto zostanie od razu aktywne. Użytkownik będzie musiał zmienić hasło przy pierwszym logowaniu.
+              </p>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Imię i nazwisko *</label>
+                <Input
+                  placeholder="np. Anna Kowalska"
+                  value={createForm.name}
+                  onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Adres e-mail *</label>
+                <Input
+                  type="email"
+                  placeholder="np. anna@example.com"
+                  value={createForm.email}
+                  onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Telefon</label>
+                <Input
+                  placeholder="np. 600 123 456"
+                  value={createForm.phone}
+                  onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase text-muted-foreground">Tymczasowe hasło *</label>
+                <Input
+                  type="password"
+                  placeholder="Min. 8 znaków"
+                  value={createForm.password}
+                  onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" className="flex-1" disabled={creating}>
+                  {creating ? 'Tworzenie...' : 'Utwórz konto'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { setCreateModalOpen(false); setCreateForm(EMPTY_CREATE_FORM); }}
+                >
+                  Anuluj
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
