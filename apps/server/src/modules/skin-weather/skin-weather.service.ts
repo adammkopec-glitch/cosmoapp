@@ -1,3 +1,4 @@
+import { SkinType } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/error.middleware';
 import { sendPushToUser } from '../push/push.service';
@@ -325,7 +326,7 @@ export const initializeSkinWeatherScheduler = () => {
 
 // ── Skin Type Advice ──────────────────────────────────────────────────────────
 
-const VALID_SKIN_TYPES = ['SUCHA', 'TLUSTA', 'MIESZANA', 'NORMALNA', 'WRAZLIWA'] as const;
+const VALID_SKIN_TYPES = new Set(Object.values(SkinType));
 
 export const getSkinTypeAdvice = async () => {
   return prisma.skinTypeAdvice.findMany({ orderBy: { skinType: 'asc' } });
@@ -333,7 +334,7 @@ export const getSkinTypeAdvice = async () => {
 
 // Empty content is intentional — admin can clear advice for a skin type via the UI
 export const updateSkinTypeAdvice = async (skinType: string, content: string) => {
-  if (!VALID_SKIN_TYPES.includes(skinType as any)) {
+  if (!VALID_SKIN_TYPES.has(skinType as SkinType)) {
     throw new AppError('Nieprawidłowy typ skóry', 400);
   }
   return prisma.skinTypeAdvice.upsert({

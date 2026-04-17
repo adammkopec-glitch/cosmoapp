@@ -164,7 +164,7 @@ export function computeSkinType(answers: number[]): ComputeResult {
   const topKeys = ALL_SKIN_TYPE_KEYS.filter(k => scores[k] === maxScore);
 
   const winner = topKeys[0];
-  const tiedWith: SkinTypeKey | null = topKeys.length === 2 ? topKeys[1] : null;
+  const tiedWith: SkinTypeKey | null = topKeys.length > 1 ? topKeys[1] : null;
 
   return { winner, scores, tiedWith };
 }
