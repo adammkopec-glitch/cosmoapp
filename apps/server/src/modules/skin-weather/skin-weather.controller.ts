@@ -51,7 +51,8 @@ export const updateProfileLocation = async (req: Request, res: Response, next: N
 
 export const generateMyReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const report = await service.generateReportForUser(req.user!.id);
+    const force = req.query.force === 'true';
+    const report = await service.generateReportForUser(req.user!.id, force);
     res.json(report);
   } catch (err) {
     next(err);
@@ -78,8 +79,8 @@ export const getRules = async (req: Request, res: Response, next: NextFunction) 
 
 export const createRule = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { label, recommendation, conditions, isActive, sortOrder } = req.body;
-    const rule = await service.createRule({ label, recommendation, conditions, isActive, sortOrder });
+    const { label, recommendation, conditions, isActive, sortOrder, thresholds } = req.body;
+    const rule = await service.createRule({ label, recommendation, conditions, isActive, sortOrder, thresholds });
     res.status(201).json(rule);
   } catch (err) {
     next(err);
@@ -89,8 +90,8 @@ export const createRule = async (req: Request, res: Response, next: NextFunction
 export const updateRule = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { label, recommendation, conditions, isActive, sortOrder } = req.body;
-    const rule = await service.updateRule(id, { label, recommendation, conditions, isActive, sortOrder });
+    const { label, recommendation, conditions, isActive, sortOrder, thresholds } = req.body;
+    const rule = await service.updateRule(id, { label, recommendation, conditions, isActive, sortOrder, thresholds });
     res.json(rule);
   } catch (err) {
     next(err);

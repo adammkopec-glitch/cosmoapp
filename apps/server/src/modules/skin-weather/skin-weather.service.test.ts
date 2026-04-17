@@ -24,7 +24,7 @@ describe('getSkinTypeAdvice', () => {
 
     const result = await getSkinTypeAdvice();
     expect(result).toEqual(fakeRecords);
-    expect(prisma.skinTypeAdvice.findMany).toHaveBeenCalledOnce();
+    expect(prisma.skinTypeAdvice.findMany).toHaveBeenCalledWith({ orderBy: { skinType: 'asc' } });
   });
 });
 

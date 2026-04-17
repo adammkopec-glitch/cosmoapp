@@ -331,6 +331,7 @@ export const getSkinTypeAdvice = async () => {
   return prisma.skinTypeAdvice.findMany({ orderBy: { skinType: 'asc' } });
 };
 
+// Empty content is intentional — admin can clear advice for a skin type via the UI
 export const updateSkinTypeAdvice = async (skinType: string, content: string) => {
   if (!VALID_SKIN_TYPES.includes(skinType as any)) {
     throw new AppError('Nieprawidłowy typ skóry', 400);
