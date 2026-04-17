@@ -118,7 +118,7 @@ function RuleForm({ initial, onClose, onSave, isPending }: {
                 const selected = form.conditions.includes(preset.key);
                 return (
                   <button key={preset.key} type="button" onClick={() => toggleParam(preset.key)}
-                    className={`relative flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${selected ? '${preset.selectedBorder} ${preset.selectedBg}' : 'border-border/40 hover:border-border bg-transparent'}`}
+                    className={`relative flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${selected ? `${preset.selectedBorder} ${preset.selectedBg}` : 'border-border/40 hover:border-border bg-transparent'}`}
                   >
                     {selected && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-foreground text-background text-[9px] flex items-center justify-center font-bold">✓</span>}
                     <span className="text-xl leading-none">{preset.icon}</span>
