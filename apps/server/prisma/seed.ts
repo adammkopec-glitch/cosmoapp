@@ -1,5 +1,5 @@
 // filepath: apps/server/prisma/seed.ts
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, SkinType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -95,10 +95,7 @@ async function main() {
   console.log('Created initial loyalty rewards.');
 
   // Seed SkinTypeAdvice (5 records, one per skin type)
-  const skinTypes: Array<'SUCHA' | 'TLUSTA' | 'MIESZANA' | 'NORMALNA' | 'WRAZLIWA'> = [
-    'SUCHA', 'TLUSTA', 'MIESZANA', 'NORMALNA', 'WRAZLIWA',
-  ];
-  for (const skinType of skinTypes) {
+  for (const skinType of Object.values(SkinType)) {
     await prisma.skinTypeAdvice.upsert({
       where: { skinType },
       update: {},
