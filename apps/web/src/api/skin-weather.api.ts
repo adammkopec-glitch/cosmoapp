@@ -39,6 +39,7 @@ export const skinWeatherApi = {
     sortOrder?: number;
     isActive?: boolean;
     conditions?: string[];
+    thresholds?: Record<string, number>;
   }) => {
     const res = await api.post('/skin-weather/rules', data);
     return res.data;
@@ -52,6 +53,7 @@ export const skinWeatherApi = {
       sortOrder?: number;
       isActive?: boolean;
       conditions?: string[];
+      thresholds?: Record<string, number>;
     },
   ) => {
     const res = await api.put(`/skin-weather/rules/${id}`, data);
@@ -66,13 +68,24 @@ export const skinWeatherApi = {
     await api.patch('/skin-weather/profile/location', data);
   },
 
-  generateMyReport: async () => {
-    const res = await api.post('/skin-weather/report/generate');
+  generateMyReport: async (force = false) => {
+    const params = force ? { force: 'true' } : undefined;
+    const res = await api.post('/skin-weather/report/generate', null, { params });
     return res.data;
   },
 
   generateAllReports: async () => {
     const res = await api.post('/skin-weather/generate-all');
+    return res.data;
+  },
+
+  getSkinTypeAdvice: async (): Promise<Array<{ id: string; skinType: string; content: string; updatedAt: string }>> => {
+    const res = await api.get('/skin-weather/skin-type-advice');
+    return res.data;
+  },
+
+  updateSkinTypeAdvice: async (skinType: string, content: string) => {
+    const res = await api.put(`/skin-weather/skin-type-advice/${skinType}`, { content });
     return res.data;
   },
 };
