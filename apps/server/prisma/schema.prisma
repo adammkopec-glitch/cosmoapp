@@ -886,6 +886,14 @@ model SkinWeatherRule {
   isActive       Boolean  @default(true)
   sortOrder      Int      @default(0)
   conditions     String[] @default([])
+  thresholds     Json     @default("{}")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model SkinTypeAdvice {
+  id        String   @id @default(cuid())
+  skinType  SkinType @unique
+  content   String   @db.Text
+  updatedAt DateTime @updatedAt
 }
