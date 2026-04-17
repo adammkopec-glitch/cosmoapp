@@ -9,6 +9,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/unread-count', journalController.getUnreadCount);
+router.get('/summary', journalController.getSummaryHandler);
 router.get('/', journalController.getJournal);
 router.post('/', upload.single('photo'), journalController.createEntry);
 router.patch('/:id', journalController.updateEntry);
@@ -17,6 +18,7 @@ router.post('/:id/comments', journalController.addComment);
 router.post('/:id/read', journalController.markEntryRead);
 
 // Admin routes
+router.get('/admin/:userId/summary', requireAdmin, journalController.adminGetSummaryHandler);
 router.get('/admin/:userId', requireAdmin, journalController.adminGetJournal);
 router.post('/admin/:userId', requireAdmin, upload.single('photo'), journalController.adminCreateEntry);
 router.patch('/admin/:userId/:entryId', requireAdmin, journalController.adminUpdateEntry);

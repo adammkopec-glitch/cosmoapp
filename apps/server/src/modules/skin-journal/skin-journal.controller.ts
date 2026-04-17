@@ -174,3 +174,29 @@ export const adminDeleteEntry = async (req: Request, res: Response, next: NextFu
     next(error);
   }
 };
+
+export const getSummaryHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const range = req.query.range as string;
+    if (!['30', '90', 'all'].includes(range)) {
+      throw new AppError('Nieprawidłowy zakres. Dozwolone: 30, 90, all', 400);
+    }
+    const data = await journalService.getSummary(req.user!.id, range as '30' | '90' | 'all');
+    res.status(200).json({ status: 'success', data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const adminGetSummaryHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const range = req.query.range as string;
+    if (!['30', '90', 'all'].includes(range)) {
+      throw new AppError('Nieprawidłowy zakres. Dozwolone: 30, 90, all', 400);
+    }
+    const data = await journalService.getSummary(req.params.userId, range as '30' | '90' | 'all');
+    res.status(200).json({ status: 'success', data });
+  } catch (error) {
+    next(error);
+  }
+};
