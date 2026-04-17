@@ -1,7 +1,7 @@
 // filepath: apps/web/src/components/layout/AdminLayout.tsx
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { ChevronDown, Bell, ShoppingBag } from 'lucide-react';
+import { ChevronDown, Bell, ShoppingBag, Cloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from './Navbar';
 import { useSocket } from '@/hooks/useSocket';
@@ -21,6 +21,7 @@ export const AdminLayout = () => {
     () =>
       location.pathname.startsWith('/admin/hero') ||
       location.pathname.startsWith('/admin/o-nas') ||
+      location.pathname.startsWith('/admin/polecane-zabiegi') ||
       location.pathname.startsWith('/admin/uslugi') ||
       location.pathname.startsWith('/admin/blog') ||
       location.pathname.startsWith('/admin/metamorfozy')
@@ -121,7 +122,7 @@ export const AdminLayout = () => {
   if (!isAuthenticated || !isAdmin) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/20">
+    <div className="min-h-screen flex flex-col bg-muted/20 pt-[72px]">
       <Navbar />
       <div className="flex-1 flex overflow-hidden">
         <aside className="w-64 bg-card border-r flex flex-col hidden md:flex">
@@ -207,6 +208,9 @@ export const AdminLayout = () => {
                   <Link to="/admin/hero" className="px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground">
                     Slider strony głównej
                   </Link>
+                  <Link to="/admin/polecane-zabiegi" className="px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground">
+                    Polecane zabiegi
+                  </Link>
                   <Link to="/admin/o-nas" className="px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground">
                     Strona „O nas"
                   </Link>
@@ -251,6 +255,13 @@ export const AdminLayout = () => {
             <Link to="/admin/regulamin" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Regulamin</Link>
             <Link to="/admin/quizy" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Quizy</Link>
             <Link to="/admin/recenzje" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium">Recenzje</Link>
+            <Link
+              to="/admin/pogoda-skory"
+              className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium flex items-center gap-2"
+            >
+              <Cloud className="h-4 w-4" />
+              <span>Twoja Skóra</span>
+            </Link>
             <Link to="/admin/chat" className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium flex items-center justify-between">
               <span>Wiadomości (Chat)</span>
               {staffUnreadTotal > 0 && (

@@ -1,6 +1,6 @@
 // filepath: apps/web/src/components/layout/UserLayout.tsx
 import { useEffect } from 'react';
-import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,7 +9,7 @@ import { discountCodesApi } from '@/api/discount-codes.api';
 import { skinJournalApi } from '@/api/skin-journal.api';
 import { notificationsApi } from '@/api/notifications.api';
 import { homecareApi } from '@/api/homecare.api';
-import { Navbar } from './Navbar';
+import { authApi } from '@/api/auth.api';
 import { Footer } from './Footer';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useChatStore } from '@/store/chat.store';
@@ -17,6 +17,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { useAchievementNotifications } from '@/components/achievements/AchievementToast';
 import { useReviewPrompt } from '@/hooks/useReviewPrompt';
 import { useTour } from '@/hooks/useTour';
+import { TourProvider } from '@/contexts/TourContext';
 import { ReviewPromptModal } from '@/components/reviews/ReviewPromptModal';
 import {
   LayoutDashboard,
@@ -29,6 +30,8 @@ import {
   Bell,
   User as UserIcon,
   Sparkles,
+  MessageCircle,
+  Cloud,
 } from 'lucide-react';
 
 const NAV_LINKS = [
@@ -40,12 +43,22 @@ const NAV_LINKS = [
   { to: '/user/rutyna', label: 'Moja Rutyna', icon: Sparkles },
   { to: '/user/produkty', label: 'Moje Produkty', icon: ShoppingBag },
   { to: '/user/polecenia', label: 'Program Poleceń', icon: Users },
+  { to: '/user/pogoda-skory', label: 'Twoja Skóra', icon: Cloud },
   { to: '/user/powiadomienia', label: 'Powiadomienia', icon: Bell },
   { to: '/user/profil', label: 'Mój Profil', icon: UserIcon },
 ];
 
-export const UserLayout = () => {
-  const { isAuthenticated, isLoading, user: storeUser, setUser } = useAuth();
+const UserLayoutInner = () => {
+  const { isAuthenticated, isLoading, user: storeUser, setUser, logout, isAdmin, isEmployee } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {}
+    logout();
+    navigate('/');
+  };
   const { unreadCount, incrementUnread } = useChatStore();
   const queryClient = useQueryClient();
 
@@ -148,12 +161,73 @@ export const UserLayout = () => {
   if (isLoading) return <div className="p-8 text-center">Ładowanie...</div>;
   if (!isAuthenticated) return <Navigate to="/auth/login" state={{ from: location.pathname }} replace />;
 
+  // Force password change for admin-created accounts
+  if (storeUser?.mustChangePassword && location.pathname !== '/user/zmien-haslo') {
+    return <Navigate to="/user/zmien-haslo" replace />;
+  }
+  // Prevent accessing change-password page when not needed
+  if (!storeUser?.mustChangePassword && location.pathname === '/user/zmien-haslo') {
+    return <Navigate to="/user/wizyty" replace />;
+  }
+
   const isActive = (path: string) =>
     path === '/user' ? location.pathname === '/user' : location.pathname.startsWith(path);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+      <header
+        className="sticky top-0 z-50 flex items-center"
+        style={{
+          height: '64px',
+          background: '#FDFAF6',
+          borderBottom: '1px solid rgba(0,0,0,0.07)',
+        }}
+      >
+        <div className="container flex items-center justify-between">
+          <Link
+            to="/user"
+            className="font-display text-[13px] tracking-[0.45em] uppercase"
+            style={{ color: '#1C1510', fontStyle: 'normal', fontWeight: 300 }}
+          >
+            Cosmo
+          </Link>
+
+          <div className="flex items-center gap-5">
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+                style={{ color: '#B8913A', fontWeight: 600 }}
+              >
+                Panel Admina
+              </Link>
+            )}
+            {!isAdmin && isEmployee && (
+              <Link
+                to="/employee"
+                className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+                style={{ color: '#B8913A', fontWeight: 600 }}
+              >
+                Panel Pracownika
+              </Link>
+            )}
+            <Link
+              to="/"
+              className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+              style={{ color: '#6B5A4E' }}
+            >
+              ← Wizytówka
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
+              style={{ color: '#6B5A4E' }}
+            >
+              Wyloguj
+            </button>
+          </div>
+        </div>
+      </header>
 
       {welcomeCoupon && (
         <div
@@ -230,7 +304,10 @@ export const UserLayout = () => {
                     }
               }
             >
-              <span>Czat</span>
+              <span className="flex items-center gap-3">
+                <MessageCircle size={18} />
+                <span>Czat</span>
+              </span>
               {unreadCount > 0 && (
                 <span
                   className="text-xs rounded-full px-1.5 py-0.5 font-bold animate-pulse"
@@ -264,3 +341,9 @@ export const UserLayout = () => {
     </div>
   );
 };
+
+export const UserLayout = () => (
+  <TourProvider>
+    <UserLayoutInner />
+  </TourProvider>
+);

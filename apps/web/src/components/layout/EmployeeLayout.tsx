@@ -24,7 +24,7 @@ export const EmployeeLayout = () => {
   if (!isEmployee) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pt-[72px]">
       <Navbar />
       <div className="container flex-1 flex py-8 gap-8">
         <aside className="w-64 border-r pr-4 hidden md:block">
