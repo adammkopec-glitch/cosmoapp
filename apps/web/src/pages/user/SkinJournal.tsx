@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Plus, X, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
@@ -195,6 +195,8 @@ function AddEntryForm({ onClose }: { onClose: () => void }) {
   const [date, setDate] = useState(getTodayString());
   const [selectedCategories, setSelectedCategories] = useState<CategorySlug[]>([]);
   const [photo, setPhoto] = useState<File | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoPreview = photo ? URL.createObjectURL(photo) : null;
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -278,9 +280,89 @@ function AddEntryForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', fontSize: 13, color: '#666', marginBottom: 6, fontWeight: 500 }}>Zdjęcie (opcjonalnie)</label>
-        <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0])} style={{ width: '100%', padding: '8px 0', fontSize: 13, color: '#666' }} />
-        {photo && <p style={{ fontSize: 12, color: '#B8913A', marginTop: 4 }}>{photo.name}</p>}
+        <label style={{ display: 'block', fontSize: 13, color: '#666', marginBottom: 8, fontWeight: 500 }}>Zdjęcie (opcjonalnie)</label>
+
+        {/* Hidden native input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(e) => setPhoto(e.target.files?.[0])}
+        />
+
+        {!photo ? (
+          /* Upload trigger area */
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              width: '100%',
+              padding: '20px 16px',
+              border: '2px dashed #e5e0d8',
+              borderRadius: 12,
+              background: '#faf9f7',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 6,
+              color: '#999',
+              fontSize: 13,
+              boxSizing: 'border-box',
+            }}
+          >
+            <span style={{ fontSize: 24 }}>📷</span>
+            <span>Dodaj zdjęcie</span>
+            <span style={{ fontSize: 11, color: '#bbb' }}>JPG, PNG, WEBP</span>
+          </button>
+        ) : (
+          /* Preview + remove */
+          <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+            <img
+              src={photoPreview!}
+              alt="Podgląd zdjęcia"
+              style={{
+                width: '100%',
+                maxHeight: 200,
+                objectFit: 'cover',
+                borderRadius: 12,
+                display: 'block',
+                border: '1px solid #e5e0d8',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setPhoto(undefined);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+              style={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'rgba(0,0,0,0.55)',
+                border: 'none',
+                color: '#fff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                lineHeight: 1,
+              }}
+              aria-label="Usuń zdjęcie"
+            >
+              ×
+            </button>
+            <p style={{ fontSize: 11, color: '#B8913A', margin: '4px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {photo.name}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="journal-form-actions">

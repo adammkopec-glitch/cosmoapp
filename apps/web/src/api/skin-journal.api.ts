@@ -35,6 +35,29 @@ export type JournalPage = {
   totalPages: number;
 };
 
+export type JournalSummary = {
+  mood: {
+    average: number | null;
+    trend: 'rising' | 'falling' | 'stable' | null;
+    byWeek: { week: string; avg: number }[];
+    distribution: { mood: number; count: number }[];
+  };
+  tags: { tag: string; count: number }[];
+  activity: {
+    totalEntries: number;
+    activeDays: number;
+    totalDays: number;
+    currentStreak: number;
+    longestStreak: number;
+    afterAppointments: number;
+  };
+  photos: {
+    total: number;
+    paths: string[];
+  };
+  range: { from: string; to: string };
+};
+
 const BASE = '/skin-journal';
 
 export const skinJournalApi = {
@@ -100,6 +123,16 @@ export const skinJournalApi = {
 
   adminDeleteEntry: async (userId: string, entryId: string): Promise<void> => {
     await api.delete(`${BASE}/admin/${userId}/${entryId}`);
+  },
+
+  getSummary: async (range: '30' | '90' | 'all'): Promise<JournalSummary> => {
+    const res = await api.get(`${BASE}/summary`, { params: { range } });
+    return res.data.data;
+  },
+
+  adminGetSummary: async (userId: string, range: '30' | '90' | 'all'): Promise<JournalSummary> => {
+    const res = await api.get(`${BASE}/admin/${userId}/summary`, { params: { range } });
+    return res.data.data;
   },
 
   // Legacy aliases for backward compatibility
