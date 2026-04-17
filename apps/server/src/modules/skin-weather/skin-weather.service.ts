@@ -79,14 +79,18 @@ interface WeatherData {
   aqi: number;         // EU AQI 0–300
 }
 
-type ConditionKey = 'HOT' | 'COLD' | 'HIGH_UV' | 'RAINY' | 'SMOG' | 'HUMID' | 'DRY';
+type ParamKey = 'temperature' | 'uv' | 'humidity' | 'aqi' | 'precip';
+
+type ParamRange = { min: number; max: number };
+type RangeThresholds = Partial<Record<ParamKey, ParamRange>>;
 
 type RuleParams = {
   label: string;
   recommendation: string;
   sortOrder?: number;
   isActive?: boolean;
-  conditions?: ConditionKey[];
+  conditions?: ParamKey[];
+  thresholds?: RangeThresholds;
 };
 
 export const createRule = async (data: RuleParams) => {
@@ -97,6 +101,7 @@ export const createRule = async (data: RuleParams) => {
       sortOrder: data.sortOrder ?? 0,
       isActive: data.isActive ?? true,
       conditions: data.conditions ?? [],
+      thresholds: data.thresholds ?? {},
     },
   });
 };
@@ -110,7 +115,8 @@ export const updateRule = async (id: string, data: Partial<RuleParams>) => {
   if (data.sortOrder !== undefined)      updateData.sortOrder = data.sortOrder;
   if (data.isActive !== undefined)       updateData.isActive = data.isActive;
   if (data.conditions !== undefined)     updateData.conditions = data.conditions;
-  return prisma.skinWeatherRule.update({ where: { id }, data: updateData });
+  if (data.thresholds !== undefined)     (updateData as any).thresholds = data.thresholds;
+  return prisma.skinWeatherRule.update({ where: { id }, data: updateData as any });
 };
 
 
@@ -128,7 +134,7 @@ export const updateProfileLocation = async (
 };
 
 // Generate report for a single user on demand
-export const generateReportForUser = async (userId: string) => {
+export const generateReportForUser = async (userId: string, force = false) => {
   const today = startOfDay(new Date());
   const profile = await prisma.skinWeatherProfile.findUnique({ where: { userId } });
   if (!profile) throw new AppError('Brak profilu pogodowego. Ustaw najpierw lokalizację.', 400);
@@ -136,7 +142,10 @@ export const generateReportForUser = async (userId: string) => {
   const existing = await prisma.skinWeatherReport.findUnique({
     where: { userId_reportDate: { userId, reportDate: today } },
   });
-  if (existing) return existing;
+  if (existing && !force) return existing;
+  if (existing && force) {
+    await prisma.skinWeatherReport.delete({ where: { userId_reportDate: { userId, reportDate: today } } });
+  }
 
   const rules = await prisma.skinWeatherRule.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
   const lat = Number(profile.locationLat);
@@ -192,24 +201,34 @@ function buildWeatherData(weather: any, airQuality: any): WeatherData {
   };
 }
 
-function checkCondition(condition: ConditionKey, w: WeatherData): boolean {
-  switch (condition) {
-    case 'HOT':     return w.temperature > 28;
-    case 'COLD':    return w.temperature < 5;
-    case 'HIGH_UV': return w.uv >= 6;
-    case 'RAINY':   return w.precip >= 60;
-    case 'SMOG':    return w.aqi >= 150;
-    case 'HUMID':   return w.humidity >= 75;
-    case 'DRY':     return w.humidity <= 30;
-    default:        return false;
+function getParamValue(param: ParamKey, w: WeatherData): number {
+  switch (param) {
+    case 'temperature': return w.temperature;
+    case 'uv':          return w.uv;
+    case 'humidity':    return w.humidity;
+    case 'aqi':         return w.aqi;
+    case 'precip':      return w.precip;
+    default:            return 0;
   }
+}
+
+function checkRange(param: ParamKey, range: ParamRange, w: WeatherData): boolean {
+  const val = getParamValue(param, w);
+  return val >= range.min && val <= range.max;
 }
 
 const matchRulesToWeather = (rules: any[], weather: any, airQuality: any) => {
   const w = buildWeatherData(weather, airQuality);
   return rules
     .filter(r => r.isActive && r.conditions.length > 0)
-    .filter(r => (r.conditions as ConditionKey[]).every(c => checkCondition(c, w)))
+    .filter(r => {
+      const ranges = (r.thresholds ?? {}) as RangeThresholds;
+      return (r.conditions as ParamKey[]).every(param => {
+        const range = ranges[param];
+        if (!range) return false;
+        return checkRange(param, range, w);
+      });
+    })
     .map(r => ({ label: r.label, recommendation: r.recommendation }));
 };
 
@@ -302,4 +321,23 @@ export const initializeSkinWeatherScheduler = () => {
   }, delay);
 
   console.log(`[SkinWeather] Scheduler initialized. Next run in ${Math.round(delay / 60000)} minutes.`);
+};
+
+// ── Skin Type Advice ──────────────────────────────────────────────────────────
+
+const VALID_SKIN_TYPES = ['SUCHA', 'TLUSTA', 'MIESZANA', 'NORMALNA', 'WRAZLIWA'] as const;
+
+export const getSkinTypeAdvice = async () => {
+  return prisma.skinTypeAdvice.findMany({ orderBy: { skinType: 'asc' } });
+};
+
+export const updateSkinTypeAdvice = async (skinType: string, content: string) => {
+  if (!VALID_SKIN_TYPES.includes(skinType as any)) {
+    throw new AppError('Nieprawidłowy typ skóry', 400);
+  }
+  return prisma.skinTypeAdvice.upsert({
+    where: { skinType: skinType as any },
+    update: { content },
+    create: { skinType: skinType as any, content },
+  });
 };
