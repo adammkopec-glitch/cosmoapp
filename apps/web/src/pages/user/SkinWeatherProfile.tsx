@@ -287,12 +287,6 @@ export const SkinWeatherProfile = () => {
   const [settingsConcerns, setSettingsConcerns] = useState<string[]>([]);
   const [settingsNotifications, setSettingsNotifications] = useState(false);
 
-  // Sync settings state when profile loads
-  const profileRef = { loaded: false };
-  if (profile && !profileRef.loaded) {
-    // We use effect-free approach: always derive from profile for initial render
-  }
-
   // ── Derived ──
   const hasProfile = !isLoading && !!profile;
   const skinTypeInfo = profile ? SKIN_TYPE_INFO[profile.skinType as keyof typeof SKIN_TYPE_INFO] : null;
