@@ -106,3 +106,23 @@ export const deleteRule = async (req: Request, res: Response, next: NextFunction
     next(err);
   }
 };
+
+export const getSkinTypeAdvice = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const advice = await service.getSkinTypeAdvice();
+    res.json(advice);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateSkinTypeAdvice = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { skinType } = req.params;
+    const { content } = req.body;
+    const advice = await service.updateSkinTypeAdvice(skinType, content ?? '');
+    res.json(advice);
+  } catch (err) {
+    next(err);
+  }
+};

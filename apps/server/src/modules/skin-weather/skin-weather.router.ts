@@ -20,4 +20,8 @@ router.put('/rules/:id', authenticate, requireAdmin, controller.updateRule);
 router.delete('/rules/:id', authenticate, requireAdmin, controller.deleteRule);
 router.post('/generate-all', authenticate, requireAdmin, controller.generateAllReports);
 
+// Skin type advice
+router.get('/skin-type-advice', authenticate, controller.getSkinTypeAdvice);
+router.put('/skin-type-advice/:skinType', authenticate, requireAdmin, controller.updateSkinTypeAdvice);
+
 export default router;
