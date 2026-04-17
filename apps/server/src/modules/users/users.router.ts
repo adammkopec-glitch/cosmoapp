@@ -20,6 +20,18 @@ router.get('/me/referrals', usersController.getMyReferrals);
 router.get('/me/recommendations', recommendationsController.getMyRecommendations);
 
 router.get('/', requireAdmin, usersController.getAllUsers);
+
+// Admin: pending accounts — MUST be before /:id
+router.get('/pending', requireAdmin, usersController.getPendingUsers);
+router.post('/admin-create', requireAdmin, usersController.adminCreateUser);
+
+// Change password (authenticated user, no admin required)
+router.patch('/me/change-password', usersController.changePassword);
+
+// Admin: approve/reject
+router.post('/:id/approve', requireAdmin, usersController.approveUser);
+router.post('/:id/reject', requireAdmin, usersController.rejectUser);
+
 router.patch('/:id/card', usersController.updateUserCard);
 router.get('/:id/recommendations', requireAdmin, recommendationsController.getByUser);
 router.get('/:id', requireAdmin, usersController.getUserDetails);

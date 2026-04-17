@@ -1,6 +1,8 @@
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middleware/error.middleware';
 import { generateCode } from '../../utils/generateCode';
+import { sendEmail } from '../../utils/email';
+import bcrypt from 'bcryptjs';
 
 const VISIT_POINTS_PREFIXES = ['Punkty za wizyte: ', 'Punkty za wizyte:', 'Punkty za wizytę: ', 'Punkty za wizytę:'];
 
@@ -34,6 +36,7 @@ const ensureAmbassadorCode = async (userId: string): Promise<string> => {
 
 export const getAllUsers = async () => {
   return prisma.user.findMany({
+    where: { accountStatus: 'ACTIVE' },
     select: {
       id: true,
       email: true,
@@ -85,8 +88,9 @@ export const getUserById = async (id: string) => {
       cardAllergies: true,
       cardConditions: true,
       cardPreferences: true,
-      cardStaffNotes: true,
       onboardingCompleted: true,
+      accountStatus: true,
+      mustChangePassword: true,
     },
   });
 
@@ -379,8 +383,61 @@ export const updateUser = async (id: string, data: any) => {
       cardAllergies: true,
       cardConditions: true,
       cardPreferences: true,
-      cardStaffNotes: true,
       onboardingCompleted: true,
     },
   });
+}
+
+export const getPendingUsers = async () => {
+  return prisma.user.findMany({
+    where: { accountStatus: 'PENDING' },
+    select: { id: true, name: true, email: true, phone: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+  });
 };
+
+export const approveUser = async (id: string) => {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new AppError('Użytkownik nie istnieje', 404);
+  if (user.accountStatus !== 'PENDING') throw new AppError('Konto nie jest w statusie oczekującym', 400);
+
+  await prisma.user.update({ where: { id }, data: { accountStatus: 'ACTIVE' } });
+
+  sendEmail(
+    user.email,
+    'Konto zatwierdzone — COSMO',
+    `<p>Cześć ${user.name},</p><p>Twoje konto w aplikacji COSMO zostało zatwierdzone. Możesz się teraz zalogować.</p>`
+  ).catch(err => console.warn('[WARN] approveUser: email send failed:', err.message));
+};
+
+export const rejectUser = async (id: string) => {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new AppError('Użytkownik nie istnieje', 404);
+  if (user.accountStatus !== 'PENDING') throw new AppError('Konto nie jest w statusie oczekującym', 400);
+
+  await prisma.user.update({ where: { id }, data: { accountStatus: 'REJECTED' } });
+};
+
+export const changeUserPassword = async (userId: string, currentPassword: string, newPassword: string) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError('Użytkownik nie istnieje', 404);
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) throw new AppError('Nieprawidłowe obecne hasło', 400);
+
+  const newHash = await bcrypt.hash(newPassword, 10);
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: newHash, mustChangePassword: false },
+    select: {
+      id: true, email: true, name: true, phone: true, role: true,
+      avatarPath: true, loyaltyPoints: true, loyaltyTier: true,
+      createdAt: true, ambassadorCode: true, referralCount: true,
+      termsAcceptedAt: true, marketingConsent: true, photoConsent: true,
+      cardAllergies: true, cardConditions: true, cardPreferences: true,
+      onboardingCompleted: true,
+      accountStatus: true, mustChangePassword: true,
+    },
+  });
+  return updated;
+};;

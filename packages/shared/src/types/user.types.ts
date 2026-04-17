@@ -11,6 +11,12 @@ export enum LoyaltyTier {
   GOLD = 'GOLD'
 }
 
+export enum AccountStatus {
+  PENDING = 'PENDING',
+  ACTIVE = 'ACTIVE',
+  REJECTED = 'REJECTED',
+}
+
 export interface User {
   id: string;
   email: string;
@@ -25,4 +31,6 @@ export interface User {
   ambassadorCode?: string | null;
   referralCount?: number;
   onboardingCompleted?: boolean;
+  accountStatus?: AccountStatus;
+  mustChangePassword?: boolean;
 }

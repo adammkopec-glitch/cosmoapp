@@ -1,6 +1,7 @@
 // filepath: apps/server/src/modules/users/users.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import * as usersService from './users.service';
+import * as authService from '../auth/auth.service';
 import { processAndSaveImage } from '../../utils/imageProcessor';
 import { AppError } from '../../middleware/error.middleware';
 
@@ -118,6 +119,56 @@ export const getUserDetails = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params;
     const user = await usersService.getUserDetails(id);
+    res.status(200).json({ status: 'success', data: { user } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPendingUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await usersService.getPendingUsers();
+    res.status(200).json({ status: 'success', data: { users } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const approveUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await usersService.approveUser(req.params.id);
+    res.status(200).json({ status: 'success', message: 'Konto zatwierdzone' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await usersService.rejectUser(req.params.id);
+    res.status(200).json({ status: 'success', message: 'Konto odrzucone' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const adminCreateUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, email, phone, password } = req.body;
+    const user = await authService.adminCreateUser({ name, email, phone, password });
+    res.status(201).json({ status: 'success', data: { user } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+      throw new AppError('Nieprawidłowe dane', 400);
+    }
+    const user = await usersService.changeUserPassword(req.user!.id, currentPassword, newPassword);
     res.status(200).json({ status: 'success', data: { user } });
   } catch (error) {
     next(error);
