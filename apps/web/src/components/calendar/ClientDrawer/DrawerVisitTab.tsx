@@ -41,15 +41,21 @@ export function DrawerVisitTab({ appointment }: Props) {
 
   const hasAllergies = !!(user as any)?.cardAllergies || !!(user as any)?.cardConditions;
 
+  const start = new Date(appointment.date);
+  const durationMin = appointment.service?.durationMinutes ?? 0;
+  const end = new Date(start.getTime() + durationMin * 60_000);
+  const fmt = (d: Date) => d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  const timeRange = durationMin > 0 ? `${fmt(start)} – ${fmt(end)}` : fmt(start);
+
   return (
     <div className="p-3 space-y-3 text-sm">
       <div>
         <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Usługa</div>
-        <div className="font-semibold">{appointment.service?.name}</div>
+        <div className="font-semibold">{appointment.service?.name ?? '—'}</div>
         <div className="text-gray-500">
-          {new Date(appointment.date).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+          {timeRange}
           {' · '}
-          {appointment.service?.price} zł
+          {appointment.service?.price != null ? `${appointment.service.price} zł` : ''}
         </div>
       </div>
 

@@ -55,6 +55,7 @@ export function HappyHourModal({
     isAllServices: true,
     employeeIds: [] as string[],
     serviceIds: [] as string[],
+    dayOfWeek: effectiveDate.getDay(),
   });
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -72,7 +73,7 @@ export function HappyHourModal({
         name: form.name || `Happy Hours ${format(effectiveDate, 'dd.MM HH:mm', { locale: pl })}`,
         type: form.type,
         date: form.type === 'ONE_TIME' ? format(effectiveDate, 'yyyy-MM-dd') : null,
-        dayOfWeek: form.type === 'RECURRING' ? effectiveDate.getDay() : null,
+        dayOfWeek: form.type === 'RECURRING' ? form.dayOfWeek : null,
         startTime: form.startTime,
         endTime: form.endTime,
         discountType: form.discountType,
@@ -83,7 +84,7 @@ export function HappyHourModal({
         serviceIds: form.isAllServices ? [] : form.serviceIds,
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['happy-hours'] });
+      qc.invalidateQueries({ queryKey: ['happyHours'] });
       toast.success('Happy Hour dodany!');
       onClose();
     },
@@ -116,7 +117,7 @@ export function HappyHourModal({
                 form.type === t ? 'bg-amber-100 text-amber-900 border-amber-400' : 'border-input hover:bg-accent'
               }`}
             >
-              {t === 'ONE_TIME' ? `Jednorazowy` : `Co ${DAY_NAMES_PL[effectiveDate.getDay()]}`}
+              {t === 'ONE_TIME' ? `Jednorazowy` : `Co ${DAY_NAMES_PL[form.dayOfWeek]}`}
             </button>
           ))}
         </div>
@@ -131,6 +132,22 @@ export function HappyHourModal({
             className={inputCls}
           />
         </div>
+
+        {/* Dzień tygodnia — tylko dla RECURRING */}
+        {form.type === 'RECURRING' && (
+          <div>
+            <label className="text-xs text-muted-foreground">Dzień tygodnia</label>
+            <select
+              value={form.dayOfWeek}
+              onChange={(e) => set('dayOfWeek', Number(e.target.value))}
+              className={inputCls}
+            >
+              {DAY_NAMES_PL.map((name, i) => (
+                <option key={i} value={i}>{name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Godziny */}
         <div className="grid grid-cols-2 gap-3">

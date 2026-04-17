@@ -25,13 +25,13 @@ export function ClientDrawer({ appointment, onClose }: Props) {
     <>
       {/* Backdrop (mobile only) */}
       <div
-        className="fixed inset-0 bg-black/20 z-30 md:hidden"
+        className="fixed inset-0 top-[72px] bg-black/20 z-30 md:hidden"
         onClick={onClose}
       />
 
       {/* Drawer */}
       <div className="
-        fixed right-0 top-0 h-full w-full md:w-80 bg-white z-40
+        fixed right-0 top-[72px] h-[calc(100vh-72px)] w-full md:w-80 bg-white z-40
         shadow-xl border-l-2 border-indigo-600
         flex flex-col overflow-hidden
         animate-in slide-in-from-right duration-200
@@ -44,7 +44,7 @@ export function ClientDrawer({ appointment, onClose }: Props) {
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
-              onClick={() => navigate(`/admin/uzytkownicy/${appointment.userId}`)}
+              onClick={() => navigate(`/admin/uzytkownicy?userId=${appointment.userId}`)}
               className="bg-indigo-600 text-white text-xs px-2 py-1 rounded hover:bg-indigo-700"
             >
               Profil ↗
