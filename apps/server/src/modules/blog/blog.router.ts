@@ -9,6 +9,7 @@ const router = Router();
 
 router.get('/', optionalAuth, blogController.getAll);
 router.get('/:slug', optionalAuth, blogController.getOne);
+router.post('/:slug/like', authenticate, blogController.likePost);
 
 router.use(authenticate, requireAdmin);
 

@@ -11,6 +11,7 @@ router.use(authenticate);
 
 router.post('/', appointmentsController.create);
 router.get('/me', appointmentsController.getMy);
+router.get('/follow-up-reminders', appointmentsController.getFollowUpReminders);
 router.post('/:id/photo', upload.single('photo'), appointmentsController.uploadPhoto);
 
 router.post('/:id/reschedule', appointmentsController.requestReschedule);

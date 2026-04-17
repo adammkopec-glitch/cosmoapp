@@ -32,6 +32,9 @@ import skinJournalRouter from './modules/skin-journal/skin-journal.router';
 import productsRouter from './modules/products/products.router';
 import homecareRouter from './modules/homecare/homecare.router';
 import blogCommentsRouter from './modules/blog-comments/blog-comments.router';
+import happyHoursRouter from './modules/happy-hours/happy-hours.router';
+import recommendedSlidesRouter from './modules/recommended-slides/router';
+import skinWeatherRouter from './modules/skin-weather/skin-weather.router';
 
 const app = express();
 
@@ -74,6 +77,9 @@ app.use('/api/skin-journal', skinJournalRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/homecare', homecareRouter);
 app.use('/api/blog-comments', blogCommentsRouter);
+app.use('/api/happy-hours', happyHoursRouter);
+app.use('/api/recommended-slides', recommendedSlidesRouter);
+app.use('/api/skin-weather', skinWeatherRouter);
 
 // 404 handler
 app.use((req: Request, res: Response, next: NextFunction) => {
