@@ -96,6 +96,21 @@ export const createComment = async (
   return comment;
 };
 
+const deleteCommentTree = async (commentId: string) => {
+  const replies = await prisma.blogComment.findMany({ where: { parentId: commentId } });
+  for (const reply of replies) {
+    await deleteCommentTree(reply.id);
+  }
+  await prisma.blogCommentReaction.deleteMany({ where: { commentId } });
+  const comment = await prisma.blogComment.findFirst({ where: { id: commentId } });
+  if (comment?.imagePath) {
+    const relPath = comment.imagePath.replace(/^\//, '');
+    const absPath = path.join(process.cwd(), relPath);
+    fs.unlink(absPath).catch(() => {});
+  }
+  await prisma.blogComment.delete({ where: { id: commentId } });
+};
+
 export const deleteComment = async (
   userId: string,
   commentId: string,
@@ -108,18 +123,13 @@ export const deleteComment = async (
     throw new AppError('Brak uprawnień do usunięcia tego komentarza', 403);
   }
 
-  // Clean up image file from disk (non-blocking)
   if (comment.imagePath) {
-    // imagePath stored as '/uploads/comments/xyz.webp' — strip leading slash
-    // before joining with cwd to avoid path.join discarding cwd on POSIX
     const relPath = comment.imagePath.replace(/^\//, '');
     const absPath = path.join(process.cwd(), relPath);
-    fs.unlink(absPath).catch(() => {
-      // File cleanup failure is non-fatal
-    });
+    fs.unlink(absPath).catch(() => {});
   }
 
-  await prisma.blogComment.delete({ where: { id: commentId } });
+  await deleteCommentTree(commentId);
 };
 
 export const moderateComment = async (

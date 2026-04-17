@@ -52,4 +52,10 @@ export const blogApi = {
     const res = await api.post(`/blog-comments/${id}/react`, { emoji });
     return res.data.data.reaction;
   },
+
+  // Likes
+  likePost: async (slug: string) => {
+    const res = await api.post(`/blog/${slug}/like`);
+    return res.data.data as { liked: boolean };
+  },
 };
