@@ -19,11 +19,8 @@ export const Navbar = () => {
   const { isAuthenticated, isAdmin, isEmployee, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
 
   const location = useLocation();
-  const isHomepage = location.pathname === '/';
-  const isTransparent = isHomepage && !scrolled;
 
   const [hidden, setHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -47,7 +44,6 @@ export const Navbar = () => {
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
-      setScrolled(y > 60);
       if (!isMobileRef.current) {
         // Hysteresis: require 10px upward movement to re-show, prevents flicker at boundary
         if (y > 100 && y > lastScrollY.current) {
@@ -82,10 +78,10 @@ export const Navbar = () => {
         className="fixed top-0 left-0 right-0 z-50"
         style={{
           height: '72px',
-          background: isTransparent ? 'transparent' : 'rgba(250,247,242,0.92)',
-          backdropFilter: isTransparent ? 'none' : 'blur(12px)',
-          WebkitBackdropFilter: isTransparent ? 'none' : 'blur(12px)',
-          borderBottom: isTransparent ? 'none' : '1px solid rgba(28,21,16,0.08)',
+          background: 'rgba(250,247,242,0.92)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(28,21,16,0.08)',
           transform: hidden ? 'translateY(-100%)' : 'translateY(0)',
           transition: 'transform 0.3s ease, background 0.3s ease, border-color 0.3s ease',
           willChange: 'transform',
@@ -96,7 +92,7 @@ export const Navbar = () => {
           <Link
             to="/"
             className="font-display text-[13px] uppercase"
-            style={{ color: isTransparent ? '#FAF7F2' : '#1C1510', fontStyle: 'normal', fontWeight: 300, letterSpacing: '0.08em' }}
+            style={{ color: '#1C1510', fontStyle: 'normal', fontWeight: 300, letterSpacing: '0.08em' }}
           >
             Cosmo
           </Link>
@@ -110,7 +106,7 @@ export const Navbar = () => {
                 className={({ isActive }) =>
                   `text-[11px] tracking-[0.2em] uppercase transition-colors hover:text-caramel${isActive ? ' border-b border-caramel pb-px' : ''}`
                 }
-                style={{ color: isTransparent ? 'rgba(250,247,242,0.75)' : '#6B5A4E' }}
+                style={{ color: '#6B5A4E' }}
               >
                 {label}
               </NavLink>
@@ -127,14 +123,14 @@ export const Navbar = () => {
                 <Link
                   to={panelLink}
                   className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
-                  style={{ color: isTransparent ? 'rgba(250,247,242,0.6)' : '#6B5A4E' }}
+                  style={{ color: '#6B5A4E' }}
                 >
                   {panelLabel}
                 </Link>
                 <button
                   onClick={handleLogout}
                   className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
-                  style={{ color: isTransparent ? 'rgba(250,247,242,0.6)' : '#6B5A4E' }}
+                  style={{ color: '#6B5A4E' }}
                 >
                   Wyloguj
                 </button>
@@ -144,7 +140,7 @@ export const Navbar = () => {
                 <Link
                   to="/auth/login"
                   className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
-                  style={{ color: isTransparent ? 'rgba(250,247,242,0.7)' : '#6B5A4E' }}
+                  style={{ color: '#6B5A4E' }}
                 >
                   Zaloguj
                 </Link>
@@ -163,11 +159,11 @@ export const Navbar = () => {
           >
             <span
               className="block h-px w-[22px] transition-all duration-300"
-              style={{ background: isTransparent ? '#FAF7F2' : '#1C1510' }}
+              style={{ background: '#1C1510' }}
             />
             <span
               className="block h-px w-[14px] transition-all duration-300"
-              style={{ background: isTransparent ? '#FAF7F2' : '#1C1510' }}
+              style={{ background: '#1C1510' }}
             />
           </button>
         </div>
