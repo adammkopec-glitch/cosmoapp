@@ -1,6 +1,6 @@
 // apps/web/src/components/layout/Navbar.tsx
-import { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { authApi } from '@/api/auth.api';
 import { Button } from '@/components/ui/button';
@@ -21,8 +21,43 @@ export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const location = useLocation();
+  const isHomepage = location.pathname === '/';
+  const isTransparent = isHomepage && !scrolled;
+
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const isMobileRef = useRef(false);
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    const mq = window.matchMedia('(max-width: 767px)');
+    isMobileRef.current = mq.matches; // set real initial value safely inside effect
+    const handler = (e: MediaQueryListEvent) => {
+      isMobileRef.current = e.matches;
+      if (e.matches) setHidden(false); // restore navbar when entering mobile breakpoint
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => {
+    setHidden(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 60);
+      if (!isMobileRef.current) {
+        // Hysteresis: require 10px upward movement to re-show, prevents flicker at boundary
+        if (y > 100 && y > lastScrollY.current) {
+          setHidden(true);
+        } else if (y < lastScrollY.current - 10) {
+          setHidden(false);
+        }
+      }
+      lastScrollY.current = y;
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -44,13 +79,16 @@ export const Navbar = () => {
   return (
     <>
       <nav
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        className="fixed top-0 left-0 right-0 z-50"
         style={{
           height: '72px',
-          background: scrolled ? 'rgba(250,247,242,0.92)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(12px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(28,21,16,0.08)' : 'none',
+          background: isTransparent ? 'transparent' : 'rgba(250,247,242,0.92)',
+          backdropFilter: isTransparent ? 'none' : 'blur(12px)',
+          WebkitBackdropFilter: isTransparent ? 'none' : 'blur(12px)',
+          borderBottom: isTransparent ? 'none' : '1px solid rgba(28,21,16,0.08)',
+          transform: hidden ? 'translateY(-100%)' : 'translateY(0)',
+          transition: 'transform 0.3s ease, background 0.3s ease, border-color 0.3s ease',
+          willChange: 'transform',
         }}
       >
         <div className="container h-full flex items-center justify-between">
@@ -58,7 +96,7 @@ export const Navbar = () => {
           <Link
             to="/"
             className="font-display text-[13px] uppercase"
-            style={{ color: scrolled ? '#1C1510' : '#FAF7F2', fontStyle: 'normal', fontWeight: 300, letterSpacing: '0.08em' }}
+            style={{ color: isTransparent ? '#FAF7F2' : '#1C1510', fontStyle: 'normal', fontWeight: 300, letterSpacing: '0.08em' }}
           >
             Cosmo
           </Link>
@@ -72,7 +110,7 @@ export const Navbar = () => {
                 className={({ isActive }) =>
                   `text-[11px] tracking-[0.2em] uppercase transition-colors hover:text-caramel${isActive ? ' border-b border-caramel pb-px' : ''}`
                 }
-                style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.75)' }}
+                style={{ color: isTransparent ? 'rgba(250,247,242,0.75)' : '#6B5A4E' }}
               >
                 {label}
               </NavLink>
@@ -89,14 +127,14 @@ export const Navbar = () => {
                 <Link
                   to={panelLink}
                   className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
-                  style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.6)' }}
+                  style={{ color: isTransparent ? 'rgba(250,247,242,0.6)' : '#6B5A4E' }}
                 >
                   {panelLabel}
                 </Link>
                 <button
                   onClick={handleLogout}
                   className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
-                  style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.6)' }}
+                  style={{ color: isTransparent ? 'rgba(250,247,242,0.6)' : '#6B5A4E' }}
                 >
                   Wyloguj
                 </button>
@@ -106,7 +144,7 @@ export const Navbar = () => {
                 <Link
                   to="/auth/login"
                   className="text-[10px] tracking-[0.2em] uppercase transition-colors hover:text-caramel"
-                  style={{ color: scrolled ? '#6B5A4E' : 'rgba(250,247,242,0.7)' }}
+                  style={{ color: isTransparent ? 'rgba(250,247,242,0.7)' : '#6B5A4E' }}
                 >
                   Zaloguj
                 </Link>
@@ -125,11 +163,11 @@ export const Navbar = () => {
           >
             <span
               className="block h-px w-[22px] transition-all duration-300"
-              style={{ background: scrolled ? '#1C1510' : '#FAF7F2' }}
+              style={{ background: isTransparent ? '#FAF7F2' : '#1C1510' }}
             />
             <span
               className="block h-px w-[14px] transition-all duration-300"
-              style={{ background: scrolled ? '#1C1510' : '#FAF7F2' }}
+              style={{ background: isTransparent ? '#FAF7F2' : '#1C1510' }}
             />
           </button>
         </div>
